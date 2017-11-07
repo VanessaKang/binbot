@@ -1,4 +1,9 @@
 Yo
+<<<<<<< HEAD
 hows it going
 
 
+=======
+
+Hey
+>>>>>>> db1bab54f7afc52eefbbc71bc3094e2f41245d23
