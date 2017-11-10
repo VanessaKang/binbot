@@ -8,23 +8,23 @@
 //were plugging things in directly to an Uno. See IO Table for complete assignment of IO
 
 //ANALOG IO ARDUINO PINS
-#define PIN_TEMP 1
-#define PIN_QRD1  2
-#define PIN_QRD2 3
+int PIN_TEMP = 1;
+int PIN_QRD1  = 2;
+int PIN_QRD2 = 3;
 
 //DIGITAL IO ARDUINO PINS
-#define PIN_ULTRA_FRONT 2
-#define PIN_ULTRA_RIGHT 4
-#define PIN_ULTRA_LEFT 7
-#define PIN_ULTRA_REAR 12
-#define PIN_ULTRA_LEVEL 13
-#define PIN_RMFWD 5
-#define PIN_RMRVS 6
-#define PIN_LMFWD 10
-#define PIN_LMRVS 9
-#define PIN_SOUND 8
-#define PIN_SERVO 3
-#define PIN_STATUSLED 11
+int PIN_ULTRA_FRONT = 2;
+int PIN_ULTRA_RIGHT = 4;
+int PIN_ULTRA_LEFT = 7;
+int PIN_ULTRA_REAR = 12;
+int PIN_ULTRA_LEVEL = 13;
+int PIN_RMFWD = 5;
+int PIN_RMRVS = 6;
+int PIN_LMFWD = 9;
+int PIN_LMRVS = 10;
+int PIN_SOUND = 8;
+int PIN_SERVO = 3;
+int PIN_STATUSLED = 11;
 void setup() {
   //All the IO must be assigned to either an Input or Output mode
   //Ultrasonics are assigned with a special function and are called locally within each read function
@@ -42,13 +42,24 @@ void setup() {
   pinMode(PIN_SOUND,OUTPUT);
   pinMode(PIN_SERVO,OUTPUT);
   pinMode(PIN_STATUSLED,OUTPUT);
+
+  Serial.begin(9600);
 }
 
 void loop() { 
-  statusLEDOn();
-  delay(500);
-  statusLEDOff();
-  delay(500);
+  
+  //rightMotorForward();
+  //leftMotorForward();
+  int test = ultraFrontRead();
+  Serial.println(test);
+  if(test>80){
+    statusLEDOn();
+    moveForward();
+  }else{
+    statusLEDOff();
+    adjustAngleNegative();
+  }
+
 }
 
 void rightMotorForward(){
@@ -139,4 +150,5 @@ int ultraRearRead(){
   val = val/US_ROUNDTRIP_CM;
   return val;
 }
+
 
