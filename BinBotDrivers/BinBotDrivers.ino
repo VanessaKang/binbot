@@ -46,20 +46,45 @@ void setup() {
   Serial.begin(9600);
 }
 
-void loop() { 
-  
-  //rightMotorForward();
-  //leftMotorForward();
-  int test = ultraFrontRead();
-  Serial.println(test);
-  if(test>80){
+void loop() {  
+  int frontRead = ultraFrontRead();
+  int rightRead = ultraRightRead();
+  int leftRead = ultraLeftRead();
+  Serial.print("Front sensor reading");
+  Serial.print(frontRead);
+  Serial.print("cm \t");
+  Serial.print("Right sensor reading");
+  Serial.print(rightRead);
+  Serial.print("cm \t");
+  Serial.print("Left sensor reading");
+  Serial.print(leftRead);
+  Serial.println("cm");
+  if(frontRead>=30 & rightRead>=30 & leftRead>=30){
     statusLEDOn();
     moveForward();
-  }else{
-    statusLEDOff();
-    adjustAngleNegative();
+    Serial.println("Moving forward");
   }
-
+  else if(frontRead<=30){
+    if(rightRead<=leftRead){
+      statusLEDOff();
+      adjustAngleLeft();
+      Serial.println("Turning Left");
+    }else{
+      statusLEDOff();
+      adjustAngleRight();
+      Serial.println("Turning Right");
+    }
+  }
+  else if(frontRead>=30 & rightRead<=30 & leftRead>=30){
+    statusLEDOff();
+    adjustAngleLeft();
+    Serial.println("Turning Left");
+  }
+  else if(frontRead>=30 & rightRead>=30 & leftRead<=30){
+    statusLEDOff();
+    adjustAngleRight();
+    Serial.println("Turning Right");
+  }
 }
 
 void rightMotorForward(){
@@ -87,12 +112,12 @@ void moveForward(){
   leftMotorForward();
 }
 
-void adjustAnglePositive(){
+void adjustAngleLeft(){
   rightMotorForward();
   leftMotorReverse();
 }
 
-void adjustAngleNegative(){
+void adjustAngleRight(){
   rightMotorReverse();
   leftMotorForward();
 }
