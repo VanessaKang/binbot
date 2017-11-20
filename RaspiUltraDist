@@ -31,7 +31,7 @@ while (count < 1000):
   distance = pulse_duration * 17150
   distance = round(distance, 2)
   print "Distance:",distance,"cm\n"
-  time.sleep(0.1)			#Putting this in cause I'm not sure how fast we boop XD
+  time.sleep(0.1)			#Putting this in cause I'm not sure how fast we read/output the boop XD
 
   count = count + 1
 
