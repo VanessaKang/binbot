@@ -89,18 +89,17 @@ def main():
     # Feel free to add more
     operations = ["ping", "example"]
 
+    client_sock = None
+    print "Waiting for connection on RFCOMM channel %d" % port
+
+    # This will block until we get a new connection
+    client_sock, client_info = server_sock.accept()
+    print "Accepted connection from ", client_info
+
     # Main Bluetooth server loop
     while True:
 
-        print "Waiting for connection on RFCOMM channel %d" % port
-
         try:
-            client_sock = None
-
-            # This will block until we get a new connection
-            client_sock, client_info = server_sock.accept()
-            print "Accepted connection from ", client_info
-
             # Read the data sent by the client
             data = client_sock.recv(1024)
             if len(data) == 0:

@@ -10,6 +10,9 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.os.SystemClock;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
@@ -36,8 +39,6 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Handler;
-import java.util.logging.LogRecord;
 
 public class Pairing extends AppCompatActivity {
 
@@ -50,6 +51,8 @@ public class Pairing extends AppCompatActivity {
 
     private ListView mList;
     private ListView mList1;
+
+    private int flag = 1;
 
     //BLuetooth Variables
     BluetoothAdapter mBluetoothAdapter;
@@ -97,6 +100,27 @@ public class Pairing extends AppCompatActivity {
         int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
         ActivityCompat.requestPermissions(this,  new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION);
 
+        mHandler = new Handler(Looper.getMainLooper()){
+            public void handleMessage(Message msg){
+                if(msg.what == MESSAGE_READ){
+                    String readMessage = null;
+                    try {
+                        readMessage = new String((byte[]) msg.obj, "UTF-8");
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                    mRead.setText(readMessage);
+                }
+
+                if(msg.what == CONNECTING_STATUS){
+                    if(msg.arg1 == 1)
+                        mConnect.setText("Connected to Device: " + (String)(msg.obj));
+                    else
+                        mConnect.setText("Connection Failed");
+                }
+            }
+        };
+
         if(mBluetoothAdapter == null) {
             //NDevice does not support Bluetooth
             Toast.makeText(this, "Device does not support Bluetooth", Toast.LENGTH_SHORT).show();
@@ -135,11 +159,12 @@ public class Pairing extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
 
-        unregisterReceiver(mReceiver);
+        if(flag == 0) {
+            unregisterReceiver(mReceiver);
+        }
     }
 
     private void startConnect() {
-        int flag = 0;
 
         mPairedDevices = mBluetoothAdapter.getBondedDevices();
         for (BluetoothDevice device : mPairedDevices){
@@ -264,6 +289,8 @@ public class Pairing extends AppCompatActivity {
                         bytes = mmInStream.read(buffer, 0, bytes); // record how many bytes we actually read
 
                         //Pass sting to handler to decode bytes
+                        mHandler.obtainMessage(CONNECTING_STATUS, -1, -1)
+                                .sendToTarget();
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
