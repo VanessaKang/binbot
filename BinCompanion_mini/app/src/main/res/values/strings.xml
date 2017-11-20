@@ -9,6 +9,12 @@
     <string name="status">Mode:</string>
     <string name="fill">Fill Level:</string>
     <string name="batt">Battery Level:</string>
+    <string name="rssi">Distance:</string>
     <string name="call_but">Call</string>
     <string name="return_but">Return</string>
+    <string name="stop_but">Resume/Stop</string>
+
+    <!--These are pairing screnn strings-->
+    <string name="paired">Currently Paired With</string>
+    <string name="discovered">Devices Found</string>
 </resources>

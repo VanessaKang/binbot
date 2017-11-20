@@ -13,23 +13,48 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <Button
-            android:id="@+id/call_button"
-            android:text="@string/call_but"
-            android:padding="16dp"
-            android:layout_marginStart="70dp"
-            android:layout_gravity="start"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-        <Button
-            android:id="@+id/return_button"
-            android:text="@string/return_but"
-            android:padding="16dp"
-            android:layout_marginEnd="70dp"
-            android:layout_gravity="end"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            <Button
+                android:id="@+id/call_button"
+                android:text="@string/call_but"
+                android:padding="16dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp"
+                android:layout_marginLeft="50dp"
+                android:layout_marginRight="50dp"
+                android:layout_gravity="center"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <Button
+                android:id="@+id/return_button"
+                android:text="@string/return_but"
+                android:padding="16dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp"
+                android:layout_marginLeft="50dp"
+                android:layout_marginRight="50dp"
+                android:layout_gravity="center"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <Button
+                android:id="@+id/stop_button"
+                android:text="@string/stop_but"
+                android:padding="16dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp"
+                android:layout_marginLeft="50dp"
+                android:layout_marginRight="50dp"
+                android:layout_gravity="center"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
     </FrameLayout>
 
     <!--Covers Top Area of the screen-->
@@ -77,6 +102,13 @@
                 android:layout_gravity="center"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
+
+            <TextView
+                android:text="@string/rssi"
+                android:textSize="@dimen/txtSize"
+                android:padding="20dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
         </LinearLayout>
 
         <LinearLayout
@@ -106,18 +138,28 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
-            <TextView
+            <ProgressBar
                 android:id="@+id/batt"
 
-                android:text="PLACEHOLDER"
-                android:textSize="@dimen/txtSize"
+                style="@android:style/Widget.ProgressBar.Horizontal"
+                android:progress="0"
+                android:padding="20dp"
+
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <ProgressBar
+                android:id="@+id/fill"
+
+                style="@android:style/Widget.ProgressBar.Horizontal"
+                android:progress="0"
                 android:padding="20dp"
 
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
             <TextView
-                android:id="@+id/fill"
+                android:id="@+id/rssi"
 
                 android:text="PLACEHOLDER"
                 android:textSize="@dimen/txtSize"
