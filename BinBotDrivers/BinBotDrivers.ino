@@ -27,6 +27,7 @@ int PIN_SERVO = 3;
 int PIN_STATUSLED = 11;
 
 int thresh = 30;
+int LRthresh = 40;
 void setup() {
   //All the IO must be assigned to either an Input or Output mode
   //Ultrasonics are assigned with a special function and are called locally within each read function
@@ -61,43 +62,59 @@ void loop() {
   Serial.print("Left sensor reading");
   Serial.print(leftRead);
   Serial.println("cm");
-  if(frontRead>=thresh & rightRead>=thresh & leftRead>=thresh){
+  if((frontRead>=thresh or frontRead == 0) & (rightRead>=thresh or rightRead == 0) & (leftRead>=thresh or leftRead == 0)){
     statusLEDOn();
     moveForward();
     Serial.println("Moving forward");
   }
-  else if(rightRead<=thresh+20 & leftRead<=thresh+20){
+  else if(((rightRead<=LRthresh) & (rightRead != 0 )) & ((leftRead<=LRthresh) & (leftRead != 0))){
     statusLEDOff();
-    adjustAngleRight();
+    if( rightRead < leftRead & leftRead != 0){
+      adjustAngleLeft();
+      Serial.println("Turning Left");
+    }
+    else if ( leftRead < rightRead & rightRead != 0) {
+       adjustAngleRight();
+       Serial.println("Turning Right");
+    }
     delay(1000);
     Serial.println("Corner Avoidance");
   }
-  else if(frontRead<=thresh & rightRead<leftRead){
+  else if((frontRead<=thresh) & (frontRead != 0)){
     statusLEDOff();
-    adjustAngleLeft();
-    Serial.println("Turning Left");
+    if( rightRead < leftRead & rightRead != 0){
+      adjustAngleLeft();
+      Serial.println("Turning Left");
+    }
+    else if ( leftRead < rightRead & leftRead != 0) {
+       adjustAngleRight();
+       Serial.println("Turning Right");
+    }
   }
-  else if(frontRead<=thresh & leftRead<rightRead){
+  else if((frontRead>=thresh) & (frontRead != 0)){
     statusLEDOff();
-    adjustAngleRight();
-    Serial.println("Turning Right");
+    if((rightRead<=LRthresh) & (rightRead != 0 )){
+      adjustAngleLeft();
+      Serial.println("Turning Left");
+    }
+    else if ( (leftRead<=LRthresh) & (leftRead != 0) ) {
+       adjustAngleRight();
+       Serial.println("Turning Right");
+    }
   }
-  else if(frontRead>=thresh & rightRead<leftRead){
-    statusLEDOff();
-    adjustAngleLeft();
-    Serial.println("Turning Left");
-  }
-  else if(frontRead>=thresh & leftRead<rightRead){
-    statusLEDOff();
-    adjustAngleRight();
-    Serial.println("Turning Right");
-  }
-
 }
 
+void allStop(){
+  digitalWrite(PIN_RMFWD,0);
+  digitalWrite(PIN_RMRVS,0);
+  digitalWrite(PIN_LMFWD,0);
+  digitalWrite(PIN_LMRVS,0);
+  delay(1000);
+}
 void rightMotorForward(){
   digitalWrite(PIN_RMFWD,1);
   digitalWrite(PIN_RMRVS,0);
+  
 }
 
 void rightMotorReverse(){
