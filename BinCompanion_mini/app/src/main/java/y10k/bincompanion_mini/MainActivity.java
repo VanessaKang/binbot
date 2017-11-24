@@ -16,7 +16,8 @@ import android.widget.Toast;
 import org.w3c.dom.Text;
 
 public class MainActivity extends AppCompatActivity {
-    //Variable Decleration
+
+    //GUT Variables
     Button mCallButton, mReturnButton, mStopButton;
     TextView mNickName, mStatus, mRSSI;
     ProgressBar mFill, mBatt;
@@ -91,4 +92,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //Connects to BinBot in the Background
+
+
 }//StatusScreen

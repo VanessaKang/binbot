@@ -48,9 +48,7 @@ public class Pairing extends AppCompatActivity {
 
     private TextView mRead;
     private TextView mConnect;
-
-    private ListView mList;
-    private ListView mList1;
+    private TextView mRSSI;
 
     private int flag = 1;
 
@@ -88,13 +86,7 @@ public class Pairing extends AppCompatActivity {
 
         mRead = (TextView) findViewById(R.id.read);
         mConnect = (TextView) findViewById(R.id.connect);
-
-        mList = (ListView) findViewById(R.id.list);
-        mList.setAdapter(mBluetoothArrayAdapter);
-
-        mList1 = (ListView) findViewById(R.id.list1);
-        mList1.setAdapter(mPairedList);
-        mList1.setOnItemClickListener(mDeviceClick);
+        mRSSI = (TextView) findViewById(R.id.rssi);
 
         //Runtime Permissions Call
         int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
@@ -159,6 +151,8 @@ public class Pairing extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
 
+        mConnectedThread.cancel();
+
         if(flag == 0) {
             unregisterReceiver(mReceiver);
         }
@@ -204,6 +198,7 @@ public class Pairing extends AppCompatActivity {
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
             String info = ((TextView) view).getText().toString();
+            final String name = info.substring(0,info.length() - 17);
             final String address = info.substring(info.length() - 17);
 
             mConnect.setText("Connecting...");
@@ -213,34 +208,43 @@ public class Pairing extends AppCompatActivity {
 
     private void connect(BluetoothDevice device){
         final BluetoothDevice d = device;
-        new Thread()
-        {
-            public void run() {
-                boolean fail = false;
-                try {
-                    mBluetoothSocket = createBluetoothSocket(d);
-                } catch (IOException e) {
-                    fail = true;
-                    Toast.makeText(getBaseContext(), "Socket creation failed", Toast.LENGTH_SHORT).show();
-                }
-                // Establish the Bluetooth socket connection.
-                try {
-                    mBluetoothSocket.connect();
-                } catch (IOException e) {
+        final String name = d.getName();
+
+        if(mConnectedThread == null) {
+            new Thread() {
+                public void run() {
+                    boolean fail = false;
                     try {
+                        mBluetoothSocket = createBluetoothSocket(d);
+                    } catch (IOException e) {
                         fail = true;
-                        mBluetoothSocket.close();
-                    } catch (IOException e2) {
-                        //insert code to deal with this
                         Toast.makeText(getBaseContext(), "Socket creation failed", Toast.LENGTH_SHORT).show();
                     }
+                    // Establish the Bluetooth socket connection.
+                    try {
+                        mBluetoothSocket.connect();
+                    } catch (IOException e) {
+                        try {
+                            fail = true;
+                            mBluetoothSocket.close();
+
+                            mHandler.obtainMessage(CONNECTING_STATUS, -1, -1)
+                                    .sendToTarget();
+                        } catch (IOException e2) {
+                            //insert code to deal with this
+                            Toast.makeText(getBaseContext(), "Socket creation failed", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                    if (fail == false) {
+                        mConnectedThread = new ConnectedThread(mBluetoothSocket);
+                        mConnectedThread.start();
+
+                        mHandler.obtainMessage(CONNECTING_STATUS, 1, -1, name)
+                                .sendToTarget();
+                    }
                 }
-                if(fail == false) {
-                    mConnectedThread = new ConnectedThread(mBluetoothSocket);
-                    mConnectedThread.start();
-                }
-            }
-        }.start();
+            }.start();
+        }
     }
 
     private BluetoothSocket createBluetoothSocket(BluetoothDevice device) throws IOException {
@@ -289,8 +293,8 @@ public class Pairing extends AppCompatActivity {
                         bytes = mmInStream.read(buffer, 0, bytes); // record how many bytes we actually read
 
                         //Pass sting to handler to decode bytes
-                        mHandler.obtainMessage(CONNECTING_STATUS, -1, -1)
-                                .sendToTarget();
+                        mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer)
+                                .sendToTarget(); // Send the obtained bytes to the UI activity
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -315,4 +319,6 @@ public class Pairing extends AppCompatActivity {
             } catch (IOException e) { }
         }
     }
+
+
 }//Pairing
