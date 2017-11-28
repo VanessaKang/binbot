@@ -1,8 +1,10 @@
+
 //Binbot Drivers
 //This code contains all the relevent IO assignments
 //and basic functionality required for movement
 
 #include <NewPing.h>
+#include <NewTone.h>
 //PIN NUMBERS
 //Since we are emulating an Arduino Uno we must use the same numbering system as if we
 //were plugging things in directly to an Uno. See IO Table for complete assignment of IO
@@ -14,6 +16,7 @@ int PIN_QRD2 = 3;
 
 //DIGITAL IO ARDUINO PINS
 int PIN_ULTRA_FRONT = 2;
+
 int PIN_ULTRA_RIGHT = 4;
 int PIN_ULTRA_LEFT = 7;
 int PIN_ULTRA_REAR = 12;
@@ -47,12 +50,25 @@ void setup() {
   pinMode(PIN_STATUSLED,OUTPUT);
 
   Serial.begin(9600);
+
+  NewTone(PIN_SOUND,500);
 }
 
 void loop() {  
   int frontRead = ultraFrontRead();
   int rightRead = ultraRightRead();
   int leftRead = ultraLeftRead();
+
+  if(frontRead == 0 or frontRead > 400){
+    frontRead = 400;
+  }
+  if(rightRead == 0 or rightRead > 400){
+rightRead = 400;
+  }
+  if(leftRead == 0 or leftRead > 400){
+    leftRead = 400;
+  }
+  
   Serial.print("Front sensor reading");
   Serial.print(frontRead);
   Serial.print("cm \t");
@@ -62,42 +78,47 @@ void loop() {
   Serial.print("Left sensor reading");
   Serial.print(leftRead);
   Serial.println("cm");
-  if((frontRead>=thresh or frontRead == 0) & (rightRead>=thresh or rightRead == 0) & (leftRead>=thresh or leftRead == 0)){
+  if((frontRead>=thresh) & (rightRead>=thresh) & (leftRead>=thresh)){
     statusLEDOn();
-    moveForward();
+    moveForward(); 
+    noNewTone(PIN_SOUND);
     Serial.println("Moving forward");
   }
-  else if(((rightRead<=LRthresh) & (rightRead != 0 )) & ((leftRead<=LRthresh) & (leftRead != 0))){
+  else if((rightRead<=thresh) & (leftRead<=thresh)){
     statusLEDOff();
-    if( rightRead < leftRead & leftRead != 0){
+    NewTone(PIN_SOUND,500);
+    if(rightRead < leftRead){
       adjustAngleLeft();
       Serial.println("Turning Left");
     }
-    else if ( leftRead < rightRead & rightRead != 0) {
+    else if (leftRead < rightRead) {
+
        adjustAngleRight();
        Serial.println("Turning Right");
     }
     delay(1000);
     Serial.println("Corner Avoidance");
   }
-  else if((frontRead<=thresh) & (frontRead != 0)){
+  else if(frontRead<=thresh){
     statusLEDOff();
-    if( rightRead < leftRead & rightRead != 0){
+    NewTone(PIN_SOUND,262);
+    if( rightRead < leftRead){
       adjustAngleLeft();
       Serial.println("Turning Left");
     }
-    else if ( leftRead < rightRead & leftRead != 0) {
+    else if (leftRead < rightRead) {
        adjustAngleRight();
        Serial.println("Turning Right");
     }
   }
-  else if((frontRead>=thresh) & (frontRead != 0)){
+  else if(frontRead>=thresh){
     statusLEDOff();
-    if((rightRead<=LRthresh) & (rightRead != 0 )){
+    NewTone(PIN_SOUND,262);
+    if(rightRead<=thresh){
       adjustAngleLeft();
       Serial.println("Turning Left");
     }
-    else if ( (leftRead<=LRthresh) & (leftRead != 0) ) {
+    else if (leftRead<=thresh) {
        adjustAngleRight();
        Serial.println("Turning Right");
     }
