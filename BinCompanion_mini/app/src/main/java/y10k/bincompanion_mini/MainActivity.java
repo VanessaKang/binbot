@@ -92,6 +92,4 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //Connects to BinBot in the Background
-
-
 }//StatusScreen
