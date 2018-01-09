@@ -11,6 +11,11 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+
+import org.w3c.dom.Text;
 
 /* DESIGN NOTES
 
@@ -21,11 +26,11 @@ BinBot to view more detail information on that robot.
     1) Check to see if device supports BT (DONE)
     2) Have deactivated screen set-up
     3) Connect via Pair Button
-    4) Until App is destoyed, keep in communication
-    5) Should try to menu when opened(?)
+    4) Until App is destroyed, keep in communication
+    5) Should try to connect when opened(?)
     7) Threads to handle incoming data whil still allowing the use to send
     commands at any time
-    8) Notify on Low Power, SIgnal and disconnect
+    8) Notify on Low Power, Signal and disconnect
     9) Notfy when command is accepted and finished
     10) Notify user on errors and ask for solutions
 
@@ -36,8 +41,12 @@ BinBot to view more detail information on that robot.
 
 public class MainActivity extends AppCompatActivity {
     //Variable Deceleration
+    private TextView mStatus, mRSSI;
+    private ProgressBar mBattery, mFill;
+    private Button mCallButton, mStopButton, mReturnButton, mShutdownButton;
 
     //TODO: define a handler so that this activity can send/recieve messages on BT Thread
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,6 +87,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void stopCommand (View view) {
         //TODO Trigger Stop Command via BTServer
+    }
+
+    public void shutdownCommand (View view){
+        //TODO: Trigger BinBot Shutdown
     }
 
     //======TOOLBAR=================================================================================

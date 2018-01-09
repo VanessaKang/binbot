@@ -156,6 +156,7 @@ public class PairingActivity extends AppCompatActivity {
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
             //TODO: Highlight Connected Device
+            view.setBackgroundColor(getResources().getColor(R.color.connectedColour));
 
             //Extract string of device address
             String deviceInfo = adapterView.getItemAtPosition(i).toString();
