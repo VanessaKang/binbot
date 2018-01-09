@@ -2,12 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="y10k.bincompanion">
 
-    <!--Permissions for the app to access bluetooth functionality of the phone-->
-    <uses-permission android:name="android.permission.BLUETOOTH"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-
-    <!--Permission for internet for debug purposes-->
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Permissions for the app to access bluetooth functionality of the phone -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:allowBackup="true"
@@ -23,8 +21,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".StatusScreen"></activity>
-        <activity android:name=".Pairing"></activity>
+        <activity
+            android:name=".PairingActivity"
+            android:parentActivityName=".MainActivity"></activity>
+
+        <service
+            android:name=".service.BluetoothService"
+            android:enabled="true"
+            android:exported="true"></service>
     </application>
 
 </manifest>

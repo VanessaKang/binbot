@@ -1,15 +1,23 @@
 <resources>
     <string name="app_name">BinCompanion</string>
-
-    <!--These are main activity strings-->
-    <string name="view_title">List of Bots:</string>
-    <string name="pair_but">Pair</string>
+    <!-- These are menu strings-->
+    <string name="pairMenuButton_Label">Pair</string>
 
     <!--These are status screen strings-->
-    <string name="nickname">Name:</string>
-    <string name="status">Mode:</string>
-    <string name="fill">Fill Level:</string>
-    <string name="batt">Battery Level:</string>
-    <string name="call_but">Call</string>
-    <string name="return_but">Return</string>
+    <string name="status_Label">Mode:</string>
+    <string name="fill_Label">Fill Level:</string>
+    <string name="battery_Label">Battery Level:</string>
+    <string name="rssi_Label">Distance:</string>
+
+    <string name="callButton_Label">Call</string>
+    <string name="returnButton_Label">Return</string>
+    <string name="stopButton_Label">Resume/Stop</string>
+    <string name="shutdownButton_Label">Shutdown</string>
+
+    <!--These are pairing screnn strings-->
+    <string name="paired_Label">Currently Paired With</string>
+    <string name="discovered_Label">Devices Found</string>
+
+    <string name="scanButton_Label">Scan</string>
+
 </resources>
