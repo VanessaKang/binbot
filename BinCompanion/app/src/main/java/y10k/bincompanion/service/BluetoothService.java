@@ -1,6 +1,7 @@
 package y10k.bincompanion.service;
 
 import android.app.Service;
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
@@ -22,10 +23,14 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.util.UUID;
 
-/*
-    TODO: This sevice will create a new thread managin the conecction of the application to the Bluetooth
-    server on the BinBot
+import y10k.bincompanion.Constants;
+import y10k.bincompanion.MainActivity;
 
+import static android.content.ContentValues.TAG;
+
+/*
+    TODO: This service will create a new thread managing the conecction of the application to the
+    Bluetooth server on the BinBot
         - Receive intent from Service start (DONE)
         - parse device name and addresss (DONE)
         - build thread using this information
@@ -33,60 +38,72 @@ import java.util.UUID;
  */
 public class BluetoothService extends Service {
     //Variable Deceleration
-    private BluetoothDevice device;
+    private int mState = Constants.STATE_NONE;
+    private IBinder mBinder = new LocalBinder();
+    private  ConnectedThread mConnectedThread;
     private BluetoothSocket mBluetoothSocket = null;
 
-    private Handler mHandler; //TODO: Setup handler to receive/send messages
-    private final IBinder mBinder = new LocalBinder();
-
-    public ConnectedThread mConnectedThread;
+    //Setup Handler
+    private final Handler mHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            switch(msg.what){
+                default:
+                    break;
+            }
+        }
+    };
 
     //Constant Deceleration
     private static final String TAG = BluetoothService.class.getSimpleName();
+
     private static final String RASP_MAC = "B8:27:EB:30:F6:FD"; //raps pi MAC Address
     private static final UUID MY_UUID = UUID.fromString("18f86520-e2af-408d-8fe6-d7dc8336c13a") ;
-
-    private final static int REQUEST_ENABLE_BT = 1; // used to identify adding bluetooth names
-    private final static int MESSAGE_READ = 2; // used in bluetooth handler to identify message update
-    private final static int CONNECTING_STATUS = 3; // used in bluetooth handler to identify message status
-
 
     public BluetoothService() {
     }
 
     @Override
+    public void onCreate() {
+        Log.d(TAG,"onCreate ");
+    }
+
+    @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        //Get device from sent intent
-        device = (BluetoothDevice) intent.getExtras().get("device");
-
-        if(device != null){
-            connectToDevice(device);
-        }//if
-
-        stopSelf();
+        Log.d(TAG, "onStartCommand");
         return START_STICKY;
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        //TODO: Setup Binder if needed
-        return null;
+        return mBinder;
     }
 
     @Override
-    public void onCreate() {
-        super.onCreate();
+    public boolean onUnbind(Intent intent) {
+        return false;
     }
 
     @Override
     public void onDestroy() {
+        mConnectedThread.cancel();
         super.onDestroy();
     }
 
     //================================= METHODS ====================================================
-    private void connectToDevice(final BluetoothDevice device){
-        Context context = getApplicationContext();
-        Toast.makeText(context, device.getAddress() , Toast.LENGTH_SHORT).show();
+    public int getState() {
+        return mState;
+    }
+
+    public void write(String command){
+        if(mState == Constants.STATE_CONNECTED) {
+            mConnectedThread.write(command.getBytes());
+        }
+    }
+
+    public void connect(final BluetoothDevice device){
+        Toast.makeText(getApplicationContext(), "Connecting..", Toast.LENGTH_SHORT).show();
+        mState = Constants.STATE_CONNECTING;
 
         //Spawn Thread to run Server Connection
         if(mConnectedThread == null) {
@@ -120,13 +137,6 @@ public class BluetoothService extends Service {
         }
     }
 
-    //================================= CLASSES + OBJECTS ==========================================
-    public class LocalBinder extends Binder {
-        BluetoothService getService() {
-            return BluetoothService.this;
-        }
-    }//LocalBInder
-
     private BluetoothSocket createBluetoothSocket(BluetoothDevice device) throws IOException {
         try {
             final Method m = device.getClass().getMethod("createInsecureRfcommSocketToServiceRecord", UUID.class);
@@ -136,68 +146,66 @@ public class BluetoothService extends Service {
         }
         return device.createRfcommSocketToServiceRecord(MY_UUID);
     } //BluetoothSocket
+    //================================= CLASSES ====================================================
+    public class LocalBinder extends Binder{
+        public BluetoothService getService() {
+            return BluetoothService.this;
+        }
+    }
 
     private class ConnectedThread extends Thread {
-        private final BluetoothSocket mmSocket;
-        private final InputStream mmInStream;
-        private final OutputStream mmOutStream;
+        private final BluetoothSocket mSocket;
+        private final InputStream mInStream;
+        private final OutputStream mOutStream;
 
-        //Default Constructor
-        public ConnectedThread(BluetoothSocket socket) {
-            mmSocket = socket;
+        public ConnectedThread(BluetoothSocket socket){
+            mSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
 
-            // Get the input and output streams, using temp objects because
-            // member streams are final
+            //Get BluetoothSocket input and output streams
             try {
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
             } catch (IOException e) {
-                Log.d(TAG, "Unable to get streams");
+                Log.e(TAG, "temp sockets not created", e);
             }
-            mmInStream = tmpIn;
-            mmOutStream = tmpOut;
-        }//constructor
+
+            mInStream = tmpIn;
+            mOutStream = tmpOut;
+            mState = Constants.STATE_CONNECTED;
+        }
 
         public void run() {
-            byte[] buffer = new byte[1024];  // buffer store for the stream
-            int bytes; // bytes returned from read()
-            // Keep listening to the InputStream until an exception occurs
-            while (true) {
-                try {
-                    // Read from the InputStream
-                    bytes = mmInStream.available();
-                    if(bytes != 0) {
-                        buffer = new byte[1024];
-                        SystemClock.sleep(100); //pause and wait for rest of data. Adjust this depending on your sending speed.
-                        bytes = mmInStream.available(); // how many bytes are ready to be read?
-                        bytes = mmInStream.read(buffer, 0, bytes); // record how many bytes we actually read
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
+            byte[] buffer = new byte[1024];
+            int numBytes;
 
+            //Keep listening while connected
+            while (mState == Constants.STATE_CONNECTED){
+                try{
+                    //Read from InputStream
+                    numBytes = mInStream.read(buffer);
+
+                    //Sned bytes to activity
+                    mHandler.obtainMessage(Constants.MESSAGE_READ, numBytes, -1, buffer).sendToTarget();
+                } catch (IOException e) {
+                    Log.d(TAG, "Lost Connection");
                     break;
                 }
             }
         }
 
-        /* Call this from the main activity to shutdown the connection */
         public void cancel() {
             try {
-                mmSocket.close();
+                mSocket.close();
+                mState = Constants.STATE_NONE;
             } catch (IOException e) { }
         }
 
-        //TODO: Reads from BT Server
-        public void read() {}
-
-        //Write to BT Server
-        public void write(String input) {
-            byte[] bytes = input.getBytes();           //converts entered String into bytes
+        public void write(byte[] buffer) {
             try {
-                mmOutStream.write(bytes);
+                mOutStream.write(buffer);
             } catch (IOException e) { }
         }
     }
-}
+}//BluetoothService

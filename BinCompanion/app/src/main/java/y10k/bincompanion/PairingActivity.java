@@ -4,9 +4,12 @@ import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
+import android.os.IBinder;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -34,22 +37,29 @@ This activity is responsible for the following actions:
 
 public class PairingActivity extends AppCompatActivity {
     //Variable Deceleration
-    private Button mScanButton;
     private ListView mPairedList, mDiscoveredList;
-
     private ArrayAdapter<String> mPairedAdaptor, mDiscoveredAdaptor;
-
     private BluetoothAdapter mBluetoothAdapter;
     private Set<BluetoothDevice> pairedDevices;
-
     private boolean recieverFlag = false; //Checks to see if receiver was registered
 
-    //Constant Deceleration
-    private final static int REQUEST_ENABLE_BT = 1; // used to identify adding bluetooth names
+    //Bind Activity to BluetoothService
+    BluetoothService mService;
+    boolean isBound = false;
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service){
+            BluetoothService.LocalBinder binder = (BluetoothService.LocalBinder) service;
+            mService = binder.getService();
+            isBound = true;
+        }
 
-    //TODO: program state variable to keep track of state of connection
-    private final static int NO_CONNECTION = 0;
-    private final static int CONNECTED = 1;
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
+            isBound = false;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,10 +76,55 @@ public class PairingActivity extends AppCompatActivity {
             //Does not support bluetooth
             Toast.makeText(this, "Device does Not Support Bluetooth", Toast.LENGTH_LONG).show();
         } else {       //Bluetooth Supported
-            //Setup Activity
-            setupActivity();
+            //Check if bluetooth is on
+            if(!mBluetoothAdapter.isEnabled()){
+                Intent enableBluetoothIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivityForResult(enableBluetoothIntent, 1);
+            }
+
+            //Runtime Permissions Call to ensure BT can be used
+            int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
+            ActivityCompat.requestPermissions(this,  new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION);
+
+            //Setup Bind to BluetoothService
+            Intent bindingIntent = new Intent(this, BluetoothService.class);
+            bindService(bindingIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+
+            //Initializa GUI element
+            mPairedList = findViewById(R.id.pairedListView);
+            mPairedList.setAdapter(mPairedAdaptor);
+            mPairedList.setOnItemClickListener(mDeviceClickListener);
+
+            mDiscoveredList = findViewById(R.id.discoveredListView);
+            mDiscoveredList.setAdapter(mDiscoveredAdaptor);
+            mDiscoveredList.setOnItemClickListener(mDeviceClickListener);
+
+            //Load Current Paired Devices into ListView
+            pairedDevices = mBluetoothAdapter.getBondedDevices();
+            if(pairedDevices.size() > 0) {
+                for (BluetoothDevice device : pairedDevices){
+                    String deviceName = device.getName();
+                    String deviceAddress = device.getAddress();
+                    mPairedAdaptor.add(deviceName + "\n" + deviceAddress);
+                }
+            }
         }//if
     }//onCreate
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
 
     @Override
     protected void onDestroy() {
@@ -81,52 +136,10 @@ public class PairingActivity extends AppCompatActivity {
     }
 
     //============================= METTHODS ========================================================
-    private void setupActivity () {
-        //Check if bluetooth is on
-        if(!mBluetoothAdapter.isEnabled()){
-            Intent enableBluetoothIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBluetoothIntent, REQUEST_ENABLE_BT);
-        }
+    public void discoverDevices (View view){
+        Context context = getApplicationContext();
+        Toast.makeText(context, "Scanning...", Toast.LENGTH_LONG).show();
 
-        //Runtime Permissions Call to ensure BT can be used
-        int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
-        ActivityCompat.requestPermissions(this,  new String[]{
-                        Manifest.permission.ACCESS_COARSE_LOCATION},
-                MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION);
-
-        //Initializa GUI element
-        mScanButton = findViewById(R.id.scanButton);
-
-        mPairedList = findViewById(R.id.pairedListView);
-        mPairedList.setAdapter(mPairedAdaptor);
-        mPairedList.setOnItemClickListener(mDeviceClickListener);
-
-        mDiscoveredList = findViewById(R.id.discoveredListView);
-        mDiscoveredList.setAdapter(mDiscoveredAdaptor);
-        mDiscoveredList.setOnItemClickListener(mDeviceClickListener);
-
-        //Load cCUrrent Paired Devices into ListView
-        pairedDevices = mBluetoothAdapter.getBondedDevices();
-        if(pairedDevices.size() > 0) {
-            for (BluetoothDevice device : pairedDevices){
-                String deviceName = device.getName();
-                String deviceAddress = device.getAddress();
-                mPairedAdaptor.add(deviceName + "\n" + deviceAddress);
-            }
-        }
-
-        mScanButton.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                Context context = getApplicationContext();
-                //TODO: Implement better way view connection status
-                Toast.makeText(context, "Scanning...", Toast.LENGTH_LONG).show();
-                discoverDevices(v);
-            }
-        });
-    } //setupActivity
-
-    private void discoverDevices (View view){
         //Check if already Discovering
         if(!mBluetoothAdapter.isDiscovering()){
             mBluetoothAdapter.startDiscovery();
@@ -146,8 +159,10 @@ public class PairingActivity extends AppCompatActivity {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 String deviceName = device.getName();
                 String deviceAddress = device.getAddress();
-                mDiscoveredAdaptor.add(deviceName + "\n" + deviceAddress);
-                mDiscoveredAdaptor.notifyDataSetChanged();
+                if(deviceName != null) {
+                    mDiscoveredAdaptor.add(deviceName + "\n" + deviceAddress);
+                    mDiscoveredAdaptor.notifyDataSetChanged();
+                }
             }//if
         }//onReceive
     };
@@ -155,21 +170,13 @@ public class PairingActivity extends AppCompatActivity {
     private AdapterView.OnItemClickListener mDeviceClickListener = new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-            //TODO: Highlight Connected Device
-            view.setBackgroundColor(getResources().getColor(R.color.connectedColour));
-
             //Extract string of device address
             String deviceInfo = adapterView.getItemAtPosition(i).toString();
             String deviceAddress = deviceInfo.substring(deviceInfo.length() - 17);
 
-            //Start Thread pairing to BinBot
-            Context context = getApplicationContext();
-            Intent startBluetoothServiceIntent = new Intent(context, BluetoothService.class);
-
-            //TODO: Pass device address to the service
-            startBluetoothServiceIntent.putExtra("device",
-                    mBluetoothAdapter.getRemoteDevice(deviceAddress));
-            startService(startBluetoothServiceIntent);
+            if(mService.getState() != Constants.STATE_CONNECTED) {
+                mService.connect(mBluetoothAdapter.getRemoteDevice(deviceAddress));
+            }
         }//onItemClick
     };
 }

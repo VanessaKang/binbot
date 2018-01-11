@@ -2,6 +2,6 @@
 <resources>
     <dimen name="labelTextSize">15sp</dimen>
 
-    <dimen name="layoutPadding">10dp</dimen>
+    <dimen name="layoutPadding">7dp</dimen>
     <dimen name="labelPadding">20dp</dimen>
 </resources>
