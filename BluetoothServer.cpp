@@ -6,8 +6,6 @@
 #include <bluetooth/rfcomm.h>
 
 #include <pthread.h>
-#include <mutex.h>
-
 #include <time.h> 
 
 //Constant Declaration 
@@ -16,8 +14,15 @@
 
 //Variable Declaration
 int connectionStatus = STATE_NOCONNECTION; 
+clock_t t;
 
-clock_t t; 
+//Function Declaration 
+void sendStatusToBinCompanion(); 
+void sendFeedbackToBinCompanion(); 
+void handleRecvMsg();
+void awaitConnection(int client, int socket); 
+void closeConnection(int client, int socket); 
+void* readOnThread(); 
 
 //Main =======================================================================================
 int main(int argc, char **argv) {
