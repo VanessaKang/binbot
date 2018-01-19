@@ -18,8 +18,9 @@
         <LinearLayout
             android:id="@+id/labelArea"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
@@ -57,6 +58,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/labelArea"
             app:layout_constraintTop_toTopOf="parent">
@@ -65,101 +67,99 @@
                 android:id="@+id/status"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                tools:text="PLACEHOLDER"
+                android:padding="@dimen/labelPadding"
                 android:textSize="@dimen/labelTextSize"
-                android:padding="@dimen/labelPadding" />
+                tools:text="PLACEHOLDER" />
 
             <ProgressBar
                 android:id="@+id/battery"
+                style="@android:style/Widget.ProgressBar.Horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/labelPadding"
-                android:progress="0"
-                style="@android:style/Widget.ProgressBar.Horizontal"/>
+                android:progress="0" />
 
             <ProgressBar
                 android:id="@+id/fill"
+                style="@android:style/Widget.ProgressBar.Horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/labelPadding"
-                android:progress="0"
-                style="@android:style/Widget.ProgressBar.Horizontal"/>
+                android:progress="0" />
 
             <TextView
                 android:id="@+id/rssi"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                tools:text="PLACEHOLDER"
+                android:padding="@dimen/labelPadding"
                 android:textSize="@dimen/labelTextSize"
-                android:padding="@dimen/labelPadding"/>
+                tools:text="PLACEHOLDER" />
         </LinearLayout>
 
     </android.support.constraint.ConstraintLayout>
 
-    <!-- TODO: Adjust Button Area to match screen when switched to landscape -->
     <android.support.constraint.ConstraintLayout
-        android:id="@+id/buttonArea"
+        android:id="@+id/bottomArea"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/topArea">
 
-        <Button
-            android:id="@+id/call_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginStart="8dp"
-            android:onClick="callCommand"
-            android:text="@string/callButton_Label"
-            app:layout_constraintBottom_toTopOf="@+id/stop_button"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <Button
-            android:id="@+id/return_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:onClick="returnCommand"
-            android:text="@string/returnButton_Label"
-            app:layout_constraintBottom_toTopOf="@+id/call_button"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <Button
-            android:id="@+id/stop_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginStart="8dp"
-            android:onClick="stopCommand"
-            android:text="@string/stopButton_Label"
-            app:layout_constraintBottom_toTopOf="@+id/shutdown_button"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <Button
-            android:id="@+id/shutdown_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginStart="8dp"
-            android:onClick="shutdownCommand"
-            android:text="@string/shutdownButton_Label"
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="5dp"
+            android:orientation="horizontal"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
+            <Button
+                android:id="@+id/call_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="callCommand"
+                android:text="@string/callButton_Label"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Button
+                android:id="@+id/return_button"
+                android:layout_width="wrap_content"
+                android:layout_height="46dp"
+                android:layout_marginEnd="8dp"
+                android:onClick="returnCommand"
+                android:text="@string/returnButton_Label"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/stop_button"
+                app:layout_constraintStart_toEndOf="@+id/call_button"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Button
+                android:id="@+id/stop_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:onClick="stopCommand"
+                android:text="@string/stopButton_Label"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/shutdown_button"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Button
+                android:id="@+id/shutdown_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="shutdownCommand"
+                android:text="@string/shutdownButton_Label"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </LinearLayout>
 
     </android.support.constraint.ConstraintLayout>
 </android.support.constraint.ConstraintLayout>
