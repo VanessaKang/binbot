@@ -99,9 +99,7 @@ int si_fsmTime;
 int si_diagTime;
 int si_serverTime;
 int si_dataTime;
-int si_clockTime
-
-
+int si_clockTime;
 
 int runTime = 50;
 
