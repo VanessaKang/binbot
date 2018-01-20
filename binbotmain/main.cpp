@@ -66,26 +66,42 @@ unsigned char buffer[60] = {0};
 unsigned char ultraVal;
 
 
-//declare global variables
+//declare global variables------------------------------------------------------------
 int ei_state = 0;
-float ef_fillLevel;
-int vi_battVolt;
-bool eb_error = 0;
-int ei_statusString;
-int ei_commandString;
+double ed_fillLevel;
+double vd_battVoltage
+int ei_error;
+//These variables cannot be defined as string, and i am not quite sure how we are using it
+//string es_statusString;
+//string es_commandString;
 bool eb_destReached = 0;
-bool eb_dest = 0;
+bool eb_nextDest = 0;
 int ei_prevState;
-int ei_botLocation;
-int ei_temp;
-int mi_objDist;
-float ef_rssi;
-float ef_beacon;
-int ei_sensorLeft;
-int ei_sensorFront;
-int ei_sensorRight;
-int ei_sensorFill;
-int ei_sensorVertical;
+double md_botLocation;
+double td_temp;
+double cmd_objDist;
+double ed_appRssi;
+double ed_beaconRssi;
+double cd_sensorLeft;
+double cd_sensorFront;
+double cd_sensorRight;
+double cd_sensorFill;
+double cd_sensorVertical;
+
+// New proposed variables from Component document
+int ei_userCommand;
+char eC_appCmdRecv;
+char eC_appStatusSend;
+
+
+//New proposed variables of time
+int si_fsmTime;
+int si_diagTime;
+int si_serverTime;
+int si_dataTime;
+int si_clockTime
+
+
 
 int runTime = 50;
 
@@ -151,7 +167,7 @@ void *FSM(void *ptr){
 				printf("Error State = %i \n ", ei_state);
 				//std::cout << float( clock() ) /CLOCKS_PER_SEC;
 				//Check for an error here and take remedial actions?, Diagnostics are run by another
-				//thread so we just need to check the global variable indicating errors (eb_error?)
+				//thread so we just need to check the global variable indicating errors (ei_error?)
 
 				ei_prevState = 0;
 			}
@@ -205,8 +221,8 @@ void *Diag(void *ptr){
 			break;
 		}
 	}
-	//std::cout << "Please enter the Value of ei_commandString: ";
-	//std::cin >> ei_commandString;
+	//std::cout << "Please enter the Value of es_commandString: ";
+	//std::cin >> es_commandString;
 
 	//Here we need to check all of our diagnostics and make changes to pertinant
 	//diagnostic variables so the Comm/FSM functions can make the correct decisions to
@@ -223,27 +239,27 @@ void *Data(void *ptr){
 
     	writeData(1);
     	delay(100);
-    	ei_sensorFront = readData();
+    	cd_sensorFront = readData();
     	//printf("Front sensor value: ");
-    	//printf("%d\n",ei_sensorFront);
+    	//printf("%d\n",cd_sensorFront);
 
     	writeData(2);
     	delay(100);
-    	ei_sensorRight = readData();
+    	cd_sensorRight = readData();
     	//printf("Right sensor value: ");
-    	//printf("%d\n",ei_sensorRight);
+    	//printf("%d\n",cd_sensorRight);
 
     	writeData(3);
     	delay(100);
-    	ei_sensorLeft = readData();
+    	cd_sensorLeft = readData();
     	//printf("Left sensor value: ");
-    	//printf("%d\n",ei_sensorLeft);
+    	//printf("%d\n",cd_sensorLeft);
 
     	writeData(4);
     	delay(100);
-    	ei_sensorFill = readData();
+    	cd_sensorFill = readData();
     	//printf("Fill sensor value: ");
-    	//printf("%d\n",ei_sensorFill);
+    	//printf("%d\n",cd_sensorFill);
 
     	writeData(5);
     	delay(100);
@@ -253,9 +269,9 @@ void *Data(void *ptr){
 
     	writeData(6);
     	delay(100);
-    	ei_temp = readData();
+    	td_temp = readData();
     	//printf("Temperature value: ");
-    	//printf("%d\n",ei_temp);
+    	//printf("%d\n",td_temp);
     	//printf("\n");
 
     	writeData(10);
@@ -285,7 +301,7 @@ void setupPins(){
   pinMode(PIN_RMFWD,OUTPUT);
   pinMode(PIN_RMRVS,OUTPUT);
   pinMode(PIN_LMFWD,OUTPUT);
-  pinMode(PIN_LMRVS,OUTPUT); 
+  pinMode(PIN_LMRVS,OUTPUT);
 Erro
   pinMode(PIN_SERVO,OUTPUT);
 
@@ -310,7 +326,7 @@ void setupi2c(){
 		//ERROR HANDLING; you can check errno to see what went wrong
 		return;
 	}
-} 
+}
 Erro
 
 unsigned char readData(){
