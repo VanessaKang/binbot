@@ -261,9 +261,9 @@ void *Data(void *ptr){
 
     	writeData(5);
     	delay(100);
-    	ei_sensorVertical = readData();
+    	cd_sensorVertical = readData();
     	//printf("Vertical sensor value: ");
-    	//printf("%d\n",ei_sensorVertical);
+    	//printf("%d\n",cd_sensorVertical);
 
     	writeData(6);
     	delay(100);
@@ -300,7 +300,6 @@ void setupPins(){
   pinMode(PIN_RMRVS,OUTPUT);
   pinMode(PIN_LMFWD,OUTPUT);
   pinMode(PIN_LMRVS,OUTPUT);
-Erro
   pinMode(PIN_SERVO,OUTPUT);
 
   pinMode(PIN_TEMP,INPUT);
