@@ -69,8 +69,8 @@ unsigned char ultraVal;
 //declare global variables------------------------------------------------------------
 int ei_state = 0;
 double ed_fillLevel;
-double vd_battVoltage
-int ei_error;
+double vd_battVoltage;
+int ei_error = 0;
 //These variables cannot be defined as string, and i am not quite sure how we are using it
 //string es_statusString;
 //string es_commandString;
