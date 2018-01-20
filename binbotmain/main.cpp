@@ -285,7 +285,8 @@ void setupPins(){
   pinMode(PIN_RMFWD,OUTPUT);
   pinMode(PIN_RMRVS,OUTPUT);
   pinMode(PIN_LMFWD,OUTPUT);
-  pinMode(PIN_LMRVS,OUTPUT);
+  pinMode(PIN_LMRVS,OUTPUT); 
+Erro
   pinMode(PIN_SERVO,OUTPUT);
 
   pinMode(PIN_TEMP,INPUT);
@@ -309,7 +310,8 @@ void setupi2c(){
 		//ERROR HANDLING; you can check errno to see what went wrong
 		return;
 	}
-}
+} 
+Erro
 
 unsigned char readData(){
 	length = 1;
