@@ -20,7 +20,7 @@ clock_t t;
 void sendStatusToBinCompanion(); 
 void sendFeedbackToBinCompanion(); 
 void handleRecvMsg();
-void awaitConnection(int client, int socket); 
+int awaitConnection(int socket); 
 void closeConnection(int client, int socket); 
 void* readOnThread(); 
 
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 	bind(s, (struct sockaddr *)&loc_addr, sizeof(loc_addr));
 
 	//Wait to connect to a device  
-	awaitConnection();
+	client = awaitConnection(s);
 
 	//Main Loop 
 	while (true) {
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 		}
 	}
 	
-	closeConnection(); 
+	closeConnection(client, socket); 
 	return 0;
 }//main 
 
@@ -89,14 +89,14 @@ void handleRecvMsg() {
 }
 
 //This function sets the socket to wait for the application to try and connect 
-void awaitConnection(int client, int socket) {
+int awaitConnection(int socket) {
 
 
 	// put socket into listening mode
 	listen(s, 1);
 
 	// accept one connection
-	client = accept(s, (struct sockaddr *)&rem_addr, &opt);
+	int client = accept(s, (struct sockaddr *)&rem_addr, &opt);
 
 	ba2str(&rem_addr.rc_bdaddr, buf);
 	fprintf(stderr, "accepted connection from %s\n", buf);
@@ -120,4 +120,6 @@ void* readOnThread() {
 	if (bytes_read > 0) {
 		printf("received [%s]\n", buf);
 	}
+
+
 }
