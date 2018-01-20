@@ -139,41 +139,44 @@ void *FSM(void *ptr){
 	printf("FSM Thread Running \n");
 	while(1){	//Run Various states until commanded to break
 		float time = ( float( clock() ) /CLOCKS_PER_SEC );
-		if(ei_state == 0 && fmod(time,1) == 0){
-			printf("Error State = %i \n ", ei_state);
-			//std::cout << float( clock() ) /CLOCKS_PER_SEC;
-			//Check for an error here and take remedial actions?, Diagnostics are run by another
-			//thread so we just need to check the global variable indicating errors (eb_error?)
 
-			ei_prevState = 0;
-		}
-		if(ei_state == 1){
-			printf("Travel State = %i \n", ei_state);
-			//Run Travel Code here
-
-			ei_prevState = 1;
-		}
-		if(ei_state == 2){
-			printf("Collection State = %i \n", ei_state);
-			//Run Collection Code here
-
-			ei_prevState = 2;
-		}
-		if(ei_state == 3){
-			printf("Disposal State = %i \n", ei_state);
-			//Run Disposal Code here
-
-			ei_prevState = 3;
-		}
 		if((float( clock() - begin_time ) /CLOCKS_PER_SEC) > runTime){
-			//Placeholder for cases of exiting FSM code, maybe upon exit there should be code recording important variables
-			//for initialization on next startup
-			logFunc();
-			endFunc();
+			printf("Diag has exited \n");
+			break;
+		}
+		switch (ei_state){
+			case 0:
+			if ( fmod(time,1) == 0){
+				printf("Error State = %i \n ", ei_state);
+				//std::cout << float( clock() ) /CLOCKS_PER_SEC;
+				//Check for an error here and take remedial actions?, Diagnostics are run by another
+				//thread so we just need to check the global variable indicating errors (eb_error?)
+
+				ei_prevState = 0;
+			}
+			break;
+			case 1: //Travel State
+				printf("Travel State = %i \n", ei_state);
+				//Run Travel Code here
+
+				ei_prevState = 1;
+			break;
+			case 2: //Collection State
+				printf("Collection State = %i \n", ei_state);
+				//Run Collection Code here
+
+				ei_prevState = 2;
+			break;
+			case 3: // Disposal State
+				printf("Disposal State = %i \n", ei_state);
+				//Run Disposal Code here
+
+				ei_prevState = 3;
 			break;
 		}
 	}
 }
+
 
 void *Comms(void *ptr){
 	printf("Comms Thread Running \n");
@@ -207,7 +210,7 @@ void *Diag(void *ptr){
 	//Here we need to check all of our diagnostics and make changes to pertinant
 	//diagnostic variables so the Comm/FSM functions can make the correct decisions to
 	//deal with the error
-	
+
 }
 
 void *Data(void *ptr){
@@ -297,7 +300,7 @@ void setupi2c(){
 		printf("Failed to open the i2c bus");
 		return;
 	}
-	
+
 	int addr = 0x04;          //<<<<<The I2C address of the slave
 	if (ioctl(file_i2c, I2C_SLAVE, addr) < 0)
 	{
@@ -309,7 +312,7 @@ void setupi2c(){
 
 unsigned char readData(){
 	length = 1;
-	if (read(file_i2c, buffer, length) != length){		
+	if (read(file_i2c, buffer, length) != length){
 		//ERROR HANDLING: i2c transaction failed
 		printf("Failed to read from the i2c bus.\n");
 	}
@@ -320,10 +323,10 @@ unsigned char readData(){
 void writeData(int val){
 	buffer[0] = val;
 	length = 1;
-	if (write(file_i2c, buffer, length) != length){		
+	if (write(file_i2c, buffer, length) != length){
 		/* ERROR HANDLING: i2c transaction failed */
 		printf("Failed to write to the i2c bus.\n");
-	}	
+	}
 }
 
 void rightMotorForward(){
