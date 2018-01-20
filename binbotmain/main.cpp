@@ -324,7 +324,6 @@ void setupi2c(){
 		return;
 	}
 }
-Erro
 
 unsigned char readData(){
 	length = 1;
