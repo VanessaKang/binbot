@@ -87,7 +87,7 @@ int ei_sensorRight;
 int ei_sensorFill;
 int ei_sensorVertical;
 
-float runTime = 2000.0;
+int runTime = 50;
 
 //Declare time variable for timing purposes
 time_t clock_time;
@@ -144,6 +144,7 @@ void *FSM(void *ptr){
 			printf("Diag has exited \n");
 			break;
 		}
+
 		switch (ei_state){
 			case 0:
 			if ( fmod(time,1) == 0){
@@ -214,6 +215,7 @@ void *Diag(void *ptr){
 }
 
 void *Data(void *ptr){
+	printf("Data Thread is running\n");
  	while(1){
  		//Turn LED ON
     	writeData(9);
@@ -222,40 +224,39 @@ void *Data(void *ptr){
     	writeData(1);
     	delay(100);
     	ei_sensorFront = readData();
-    	printf("Front sensor value: ");
-    	printf("%d\n",ei_sensorFront);
+    	//printf("Front sensor value: ");
+    	//printf("%d\n",ei_sensorFront);
 
     	writeData(2);
     	delay(100);
     	ei_sensorRight = readData();
-    	printf("Right sensor value: ");
-    	printf("%d\n",ei_sensorRight);
+    	//printf("Right sensor value: ");
+    	//printf("%d\n",ei_sensorRight);
 
     	writeData(3);
     	delay(100);
     	ei_sensorLeft = readData();
-    	printf("Left sensor value: ");
-    	printf("%d\n",ei_sensorLeft);
+    	//printf("Left sensor value: ");
+    	//printf("%d\n",ei_sensorLeft);
 
     	writeData(4);
     	delay(100);
     	ei_sensorFill = readData();
-    	printf("Fill sensor value: ");
-    	printf("%d\n",ei_sensorFill);
+    	//printf("Fill sensor value: ");
+    	//printf("%d\n",ei_sensorFill);
 
     	writeData(5);
     	delay(100);
     	ei_sensorVertical = readData();
-    	printf("Vertical sensor value: ");
-    	printf("%d\n",ei_sensorVertical);
+    	//printf("Vertical sensor value: ");
+    	//printf("%d\n",ei_sensorVertical);
 
     	writeData(6);
     	delay(100);
     	ei_temp = readData();
-    	printf("Temperature value: ");
-    	printf("%d\n",ei_temp);
-
-    	printf("\n");
+    	//printf("Temperature value: ");
+    	//printf("%d\n",ei_temp);
+    	//printf("\n");
 
     	writeData(10);
     	delay(100);
@@ -297,7 +298,7 @@ void setupi2c(){
 	if ((file_i2c = open(filename, O_RDWR)) < 0)
 	{
 		//ERROR HANDLING: you can check errno to see what went wrong
-		printf("Failed to open the i2c bus");
+		printf("Failed to open the i2c bus\n");
 		return;
 	}
 
@@ -314,7 +315,7 @@ unsigned char readData(){
 	length = 1;
 	if (read(file_i2c, buffer, length) != length){
 		//ERROR HANDLING: i2c transaction failed
-		printf("Failed to read from the i2c bus.\n");
+		//printf("Failed to read from the i2c bus.\n");
 	}
 	unsigned char val = buffer[0];
 	return val;
@@ -325,7 +326,7 @@ void writeData(int val){
 	length = 1;
 	if (write(file_i2c, buffer, length) != length){
 		/* ERROR HANDLING: i2c transaction failed */
-		printf("Failed to write to the i2c bus.\n");
+		//printf("Failed to write to the i2c bus.\n");
 	}
 }
 
