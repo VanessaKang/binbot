@@ -39,6 +39,7 @@ void leftMotorReverse();
 void moveForward();
 void adjustAnglePositive();
 void adjustAngleNegative();
+void allStop();
 
 
 //declare sensor/actuator functions
@@ -69,7 +70,13 @@ void printHardwareValues();
 // Define Constants used in code **** Needs to be edited
 //BIN SENSOR CONSTANTS
 #define BINFULLDIST 5.0
-#define BINEMPTYDIST 100.0
+#define BINEMPTYDIST 60.0
+
+//State Constants
+#define ERRORSTATE 0
+#define TRAVELSTATE 1
+#define COLLECTIONSTATE 2
+#define DISPOSALSTATE 3
 
 //USER COMMAND
 #define NO_COMMAND 0
@@ -417,11 +424,80 @@ void travel(){
 }
 
 void collection(){
-    //
+    while ((cd_sensorFill >= BINEMPTYDIST) && (ei_userCommand == NO_COMMAND)){
+        // Making it a super super
+        if (ei_error != 0)
+        {
+            ei_prevState = ei_state;
+            ei_state = ERRORSTATE;
+            break;
+        }
+    }
+    if(ei_userCommand != NO_COMMAND){
+        //switch cases to adjust state based on user command
+        switch(ei_userCommand){
+            case SHUT_DOWN:
+                //do shutdown stuff
+                logFunc();
+                system("sudo shutdown -h now");
+                break;
+            case STOP;
+                //do stop stuff
+                break;
+            case MOVE_TO_COLLECTIONS:
+                //do move to collections stuff
+                break;
+            case MOVE_TO_DISPOSAL:
+                //do move to disposal stuff
+                break;
+            break; //break out of while loop after changing state based on user command
+        }
+    }
+    else if (cd_sensorFill <= BINFULLDIST)
+    {
+        ei_prevState = ei_state;
+        eb_nextDest = 1; //next destination is disposal
+        ei_state = TRAVELSTATE;
+        break;
+    }
 }
 
 void disposal(){
+	while( (cd_sensorFill < BINFULLDIST) && (ei_userCommand == NO_COMMAND) ){
+		//Stay still, wait for garbage to be disposed
+		//send message to app, error state will bring back to disposal state
+		if(ei_error != 0){
+			ei_prevState = ei_state;
+			ei_state = ERRORSTATE; //set state to 0 for error state due to error
+            break;
+		}
+	}
 
+	if(ei_userCommand != NO_COMMAND){
+		//switch cases to adjust state based on user command
+		switch(ei_userCommand){
+			case SHUT_DOWN:
+				//do shutdown stuff
+				logFunc();
+				system("sudo shutdown -h now");
+				break;
+			case STOP;
+				//do stop stuff
+				break;
+			case MOVE_TO_COLLECTIONS:
+				//do move to collections stuff
+				break;
+			case MOVE_TO_DISPOSAL:
+				//do move to disposal stuff
+				break;
+			break; //break out of while loop after changing state based on user command
+		}
+	}
+	else{
+        ei_prevState = ei_state;
+		ei_state = TRAVELSTATE; //travel mode
+		eb_nextDest = 0; //next destination is collection zone
+	}
 }
 
 void endFunc(){
@@ -442,6 +518,9 @@ void binLevelDetect(){
 
 //*********************** Diagnostic Functions ********************************//
 void overheatDiag(){
+    //LAN9512 has operating range of 0 celsius to 70 celsius
+    // 250mV at 25 celsius and 20mV/(degree celsius)
+	if td_temp >=
 
 }
 void batteryLowDiag(){
