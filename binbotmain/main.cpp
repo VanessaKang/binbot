@@ -59,6 +59,18 @@ void connectionDiag();
 #define PIN_LMRVS 4
 #define PIN_SERVO 17
 
+//BIN SENSOR CONSTANTS
+#define BINFULLDIST 5.0
+#define BINEMPTYDIST 100.0
+
+//USER COMMAND
+#define NO_COMMAND 0
+#define SHUT_DOWN 1
+#define STOP 2
+#define MOVE_TO_COLLECTIONS 3
+#define MOVE_TO_DISPOSAL 4
+
+
 //i2c global variables
 int file_i2c;
 int length;
@@ -388,7 +400,7 @@ void travel(){
 }
 
 void collection(){
-
+    //
 }
 
 void disposal(){
