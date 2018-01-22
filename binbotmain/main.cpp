@@ -441,7 +441,7 @@ void collection(){
                 logFunc();
                 system("sudo shutdown -h now");
                 break;
-            case STOP;
+            case STOP:
                 //do stop stuff
                 break;
             case MOVE_TO_COLLECTIONS:
@@ -450,15 +450,15 @@ void collection(){
             case MOVE_TO_DISPOSAL:
                 //do move to disposal stuff
                 break;
-            break; //break out of while loop after changing state based on user command
+	return; //break out of function after receiving user command
         }
     }
-    else if (cd_sensorFill <= BINFULLDIST)
+    else
     {
         ei_prevState = ei_state;
         eb_nextDest = 1; //next destination is disposal
         ei_state = TRAVELSTATE;
-        break;
+	return;
     }
 }
 
@@ -481,7 +481,7 @@ void disposal(){
 				logFunc();
 				system("sudo shutdown -h now");
 				break;
-			case STOP;
+			case STOP:
 				//do stop stuff
 				break;
 			case MOVE_TO_COLLECTIONS:
@@ -490,13 +490,14 @@ void disposal(){
 			case MOVE_TO_DISPOSAL:
 				//do move to disposal stuff
 				break;
-			break; //break out of while loop after changing state based on user command
+		return; //break out of function after receiving user command
 		}
 	}
 	else{
         ei_prevState = ei_state;
 		ei_state = TRAVELSTATE; //travel mode
 		eb_nextDest = 0; //next destination is collection zone
+		return;
 	}
 }
 
