@@ -424,13 +424,13 @@ void travel(){
 }
 
 void collection(){
-    while ((cd_sensorFill >= BINEMPTYDIST) && (ei_userCommand = NO_COMMAND)){
+    while ((cd_sensorFill >= BINEMPTYDIST) && (ei_userCommand == NO_COMMAND)){
         // Making it a super super
-        if (eb_error = 1)
+        if (ei_error != 0)
         {
             ei_prevState = ei_state;
-            ei_state = 0;
-            break
+            ei_state = ERRORSTATE;
+            break;
         }
     }
     if(ei_userCommand != NO_COMMAND){
@@ -456,8 +456,9 @@ void collection(){
     else if (cd_sensorFill <= BINFULLDIST)
     {
         ei_prevState = ei_state;
-        ei_state = 1
-        break
+        eb_nextDest = 1; //next destination is disposal
+        ei_state = TRAVELSTATE;
+        break;
     }
 }
 
@@ -465,9 +466,10 @@ void disposal(){
 	while( (cd_sensorFill < BINFULLDIST) && (ei_userCommand == NO_COMMAND) ){
 		//Stay still, wait for garbage to be disposed
 		//send message to app, error state will bring back to disposal state
-		if(ei_error == 0){
+		if(ei_error != 0){
 			ei_prevState = ei_state;
-			ei_state = 0; //set state to 0 for error state due to error
+			ei_state = ERRORSTATE; //set state to 0 for error state due to error
+            break;
 		}
 	}
 
@@ -492,7 +494,8 @@ void disposal(){
 		}
 	}
 	else{
-		ei_state = 3; //travel mode
+        ei_prevState = ei_state;
+		ei_state = TRAVELSTATE; //travel mode
 		eb_nextDest = 0; //next destination is collection zone
 	}
 }
