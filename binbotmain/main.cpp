@@ -68,7 +68,7 @@ void showIP();
 // Define Constants used in code **** Needs to be edited
 //BIN SENSOR CONSTANTS
 #define BINFULLDIST 5.0
-#define BINEMPTYDIST 100.0
+#define BINEMPTYDIST 60.0
 
 //USER COMMAND
 #define NO_COMMAND 0
@@ -425,7 +425,25 @@ void travel(){
 }
 
 void collection(){
-    //
+    while ((cd_sensorFill >= BINEMPTYDIST) && (ei_userCommand = NO_COMMAND)){
+        // Making it a super super
+        if (eb_error = 1)
+        {
+            ei_prevState = ei_state;
+            ei_state = 0;
+            break
+        }
+    }
+    if (ei_userCommand != NO_COMMAND)
+    {
+        // Use the command function
+    }
+    else if (cd_sensorFill <= BINFULLDIST)
+    {
+        ei_prevState = ei_state;
+        ei_state = 1
+        break
+    }
 }
 
 void disposal(){
