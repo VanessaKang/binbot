@@ -10,6 +10,10 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <ifaddrs.h>
 
 //declare primary functions
 void *FSM(void* ptr);
@@ -35,6 +39,7 @@ void leftMotorReverse();
 void moveForward();
 void adjustAnglePositive();
 void adjustAngleNegative();
+void allStop();
 
 
 //declare sensor/actuator functions
@@ -51,6 +56,9 @@ void ultraSensDiag();
 void motorDiag();
 void connectionDiag();
 
+void showIP();
+void printHardwareValues();
+
 //DIGITAL IO Pi GPIO pins
 #define PIN_TEMP 5
 #define PIN_RMFWD 20
@@ -58,6 +66,24 @@ void connectionDiag();
 #define PIN_LMFWD 26
 #define PIN_LMRVS 4
 #define PIN_SERVO 17
+
+// Define Constants used in code **** Needs to be edited
+//BIN SENSOR CONSTANTS
+#define BINFULLDIST 5.0
+#define BINEMPTYDIST 60.0
+
+//State Constants
+#define ERRORSTATE 0
+#define TRAVELSTATE 1
+#define COLLECTIONSTATE 2
+#define DISPOSALSTATE 3
+
+//USER COMMAND
+#define NO_COMMAND 0
+#define SHUT_DOWN 1
+#define STOP 2
+#define MOVE_TO_COLLECTIONS 3
+#define MOVE_TO_DISPOSAL 4
 
 //i2c global variables
 int file_i2c;
@@ -101,6 +127,9 @@ int si_serverTime;
 int si_dataTime;
 int si_clockTime;
 
+//Host name IP
+char host[NI_MAXHOST];
+
 int runTime = 50;
 
 //Declare time variable for timing purposes
@@ -114,6 +143,7 @@ int main(){
 //Setup hardware functionality
 setupPins();
 setupi2c();
+showIP();
 
 //declare local variables
 int placeholder;
@@ -238,42 +268,33 @@ void *Data(void *ptr){
     	writeData(1);
     	delay(100);
     	cd_sensorFront = readData();
-    	//printf("Front sensor value: ");
-    	//printf("%d\n",cd_sensorFront);
 
     	writeData(2);
     	delay(100);
     	cd_sensorRight = readData();
-    	//printf("Right sensor value: ");
-    	//printf("%d\n",cd_sensorRight);
 
     	writeData(3);
     	delay(100);
     	cd_sensorLeft = readData();
-    	//printf("Left sensor value: ");
-    	//printf("%d\n",cd_sensorLeft);
 
     	writeData(4);
     	delay(100);
     	cd_sensorFill = readData();
-    	//printf("Fill sensor value: ");
-    	//printf("%d\n",cd_sensorFill);
 
     	writeData(5);
     	delay(100);
     	cd_sensorVertical = readData();
-    	//printf("Vertical sensor value: ");
-    	//printf("%d\n",cd_sensorVertical);
+
 
     	writeData(6);
     	delay(100);
     	td_temp = readData();
-    	//printf("Temperature value: ");
-    	//printf("%d\n",td_temp);
-    	//printf("\n");
 
+    	//Turn LED Off
     	writeData(10);
     	delay(100);
+
+    	//printHardwareValues();
 
 
     	if((float( clock() - begin_time ) /CLOCKS_PER_SEC) > runTime){
@@ -345,38 +366,53 @@ void writeData(int val){
 }
 
 void rightMotorForward(){
-  digitalWrite(PIN_RMFWD,HIGH);
-  digitalWrite(PIN_RMRVS,LOW);
+ 	digitalWrite(PIN_RMFWD,HIGH);
+	digitalWrite(PIN_RMRVS,LOW);
 }
 
 void rightMotorReverse(){
-  digitalWrite(PIN_RMRVS,HIGH);
-  digitalWrite(PIN_RMFWD,LOW);
+	digitalWrite(PIN_RMRVS,HIGH);
+	digitalWrite(PIN_RMFWD,LOW);
 }
 
 void leftMotorForward(){
-  digitalWrite(PIN_LMFWD,HIGH);
-  digitalWrite(PIN_LMRVS,LOW);
+	digitalWrite(PIN_LMFWD,HIGH);
+	digitalWrite(PIN_LMRVS,LOW);
 }
 
 void leftMotorReverse(){
-  digitalWrite(PIN_LMRVS,HIGH);
-  digitalWrite(PIN_LMFWD,LOW);
+	digitalWrite(PIN_LMRVS,HIGH);
+	digitalWrite(PIN_LMFWD,LOW);
+}
+
+void rightMotorStop(){
+	digitalWrite(PIN_RMFWD,LOW);
+	digitalWrite(PIN_RMRVS,LOW);
+}
+
+void leftMotorStop(){
+	digitalWrite(PIN_LMFWD,LOW);
+	digitalWrite(PIN_LMRVS,LOW);
 }
 
 void moveForward(){
-  rightMotorForward();
-  leftMotorForward();
+	rightMotorForward();
+	leftMotorForward();
+}
+
+void allStop(){
+	rightMotorStop();
+	leftMotorStop();
 }
 
 void adjustAnglePositive(){
-  rightMotorForward();
-  leftMotorReverse();
+	rightMotorForward();
+	leftMotorReverse();
 }
 
 void adjustAngleNegative(){
-  rightMotorReverse();
-  leftMotorForward();
+	rightMotorReverse();
+	leftMotorForward();
 }
 
 void errorState(){
@@ -388,11 +424,80 @@ void travel(){
 }
 
 void collection(){
-
+    while ((cd_sensorFill >= BINEMPTYDIST) && (ei_userCommand == NO_COMMAND)){
+        // Making it a super super
+        if (ei_error != 0)
+        {
+            ei_prevState = ei_state;
+            ei_state = ERRORSTATE;
+            break;
+        }
+    }
+    if(ei_userCommand != NO_COMMAND){
+        //switch cases to adjust state based on user command
+        switch(ei_userCommand){
+            case SHUT_DOWN:
+                //do shutdown stuff
+                logFunc();
+                system("sudo shutdown -h now");
+                break;
+            case STOP;
+                //do stop stuff
+                break;
+            case MOVE_TO_COLLECTIONS:
+                //do move to collections stuff
+                break;
+            case MOVE_TO_DISPOSAL:
+                //do move to disposal stuff
+                break;
+            break; //break out of while loop after changing state based on user command
+        }
+    }
+    else if (cd_sensorFill <= BINFULLDIST)
+    {
+        ei_prevState = ei_state;
+        eb_nextDest = 1; //next destination is disposal
+        ei_state = TRAVELSTATE;
+        break;
+    }
 }
 
 void disposal(){
+	while( (cd_sensorFill < BINFULLDIST) && (ei_userCommand == NO_COMMAND) ){
+		//Stay still, wait for garbage to be disposed
+		//send message to app, error state will bring back to disposal state
+		if(ei_error != 0){
+			ei_prevState = ei_state;
+			ei_state = ERRORSTATE; //set state to 0 for error state due to error
+            break;
+		}
+	}
 
+	if(ei_userCommand != NO_COMMAND){
+		//switch cases to adjust state based on user command
+		switch(ei_userCommand){
+			case SHUT_DOWN:
+				//do shutdown stuff
+				logFunc();
+				system("sudo shutdown -h now");
+				break;
+			case STOP;
+				//do stop stuff
+				break;
+			case MOVE_TO_COLLECTIONS:
+				//do move to collections stuff
+				break;
+			case MOVE_TO_DISPOSAL:
+				//do move to disposal stuff
+				break;
+			break; //break out of while loop after changing state based on user command
+		}
+	}
+	else{
+        ei_prevState = ei_state;
+		ei_state = TRAVELSTATE; //travel mode
+		eb_nextDest = 0; //next destination is collection zone
+	}
 }
 
 void endFunc(){
@@ -413,6 +518,9 @@ void binLevelDetect(){
 
 //*********************** Diagnostic Functions ********************************//
 void overheatDiag(){
+    //LAN9512 has operating range of 0 celsius to 70 celsius
+    // 250mV at 25 celsius and 20mV/(degree celsius)
+	if td_temp >=
 
 }
 void batteryLowDiag(){
@@ -435,4 +543,55 @@ void motorDiag(){
 }
 void connectionDiag(){
 
+}
+
+
+//Miscellaneous functions, can be moved wherever
+
+void showIP()
+{
+    struct ifaddrs *ifaddr, *ifa;
+    int s;
+
+    if (getifaddrs(&ifaddr) == -1)
+    {
+        perror("getifaddrs");
+        exit(EXIT_FAILURE);
+    }
+
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+    {
+        if (ifa->ifa_addr == NULL)
+            continue;
+
+        s=getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in),host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+
+        if( /*(strcmp(ifa->ifa_name,"wlan0")==0)&&( */ ifa->ifa_addr->sa_family==AF_INET) // )
+        {
+            if (s != 0)
+            {
+                printf("getnameinfo() failed: %s\n", gai_strerror(s));
+                exit(EXIT_FAILURE);
+            }
+            printf("Interface : <%s>\n",ifa->ifa_name );
+            printf("Address : <%s>\n", host);
+        }
+    }
+}
+
+void printHardwareValues(){
+	printf("Front sensor value: ");
+    printf("%d\n",cd_sensorFront);
+    printf("Right sensor value: ");
+    printf("%d\n",cd_sensorRight);
+    printf("Left sensor value: ");
+    printf("%d\n",cd_sensorLeft);
+    printf("Fill sensor value: ");
+    printf("%d\n",cd_sensorFill);
+    printf("Vertical sensor value: ");
+    printf("%d\n",cd_sensorVertical);
+    printf("Temperature value: ");
+    printf("%d\n",td_temp);
+    printf("\n");
 }
