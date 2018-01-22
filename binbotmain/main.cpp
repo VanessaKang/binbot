@@ -520,8 +520,15 @@ void binLevelDetect(){
 //*********************** Diagnostic Functions ********************************//
 void overheatDiag(){
     //LAN9512 has operating range of 0 celsius to 70 celsius
-    // 250mV at 25 celsius and 20mV/(degree celsius)
-	if td_temp >=
+    // 750mV at 25 celsius and 10mV/(degree celsius)
+	if (td_temp<= 500 or td_temp >= 1200)
+	{
+	    ei_error = 1;
+	    return
+	}
+	
+	ei_error = 0;
+	return
 
 }
 void batteryLowDiag(){
