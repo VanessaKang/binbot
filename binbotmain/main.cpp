@@ -56,6 +56,7 @@ void motorDiag();
 void connectionDiag();
 
 void showIP();
+void printHardwareValues();
 
 //DIGITAL IO Pi GPIO pins
 #define PIN_TEMP 5
@@ -260,42 +261,33 @@ void *Data(void *ptr){
     	writeData(1);
     	delay(100);
     	cd_sensorFront = readData();
-    	//printf("Front sensor value: ");
-    	//printf("%d\n",cd_sensorFront);
 
     	writeData(2);
     	delay(100);
     	cd_sensorRight = readData();
-    	//printf("Right sensor value: ");
-    	//printf("%d\n",cd_sensorRight);
 
     	writeData(3);
     	delay(100);
     	cd_sensorLeft = readData();
-    	//printf("Left sensor value: ");
-    	//printf("%d\n",cd_sensorLeft);
 
     	writeData(4);
     	delay(100);
     	cd_sensorFill = readData();
-    	//printf("Fill sensor value: ");
-    	//printf("%d\n",cd_sensorFill);
 
     	writeData(5);
     	delay(100);
     	cd_sensorVertical = readData();
-    	//printf("Vertical sensor value: ");
-    	//printf("%d\n",cd_sensorVertical);
+
 
     	writeData(6);
     	delay(100);
     	td_temp = readData();
-    	//printf("Temperature value: ");
-    	//printf("%d\n",td_temp);
-    	//printf("\n");
 
+    	//Turn LED Off
     	writeData(10);
     	delay(100);
+
+    	//printHardwareValues();
 
 
     	if((float( clock() - begin_time ) /CLOCKS_PER_SEC) > runTime){
@@ -468,7 +460,9 @@ void binLevelDetect(){
 
 //*********************** Diagnostic Functions ********************************//
 void overheatDiag(){
-
+    //LAN9512 has operating range of 0 celsius to 70 celsius
+    // 250mV at 25 celsius and 20mV/(degree celsius)
+    if td_temp >= 
 }
 void batteryLowDiag(){
 
@@ -491,6 +485,9 @@ void motorDiag(){
 void connectionDiag(){
 
 }
+
+
+//Miscellaneous functions, can be moved wherever
 
 void showIP()
 {
@@ -524,3 +521,18 @@ void showIP()
     }
 }
 
+void printHardwareValues(){
+	printf("Front sensor value: ");
+    printf("%d\n",cd_sensorFront);
+    printf("Right sensor value: ");
+    printf("%d\n",cd_sensorRight);
+    printf("Left sensor value: ");
+    printf("%d\n",cd_sensorLeft);
+    printf("Fill sensor value: ");
+    printf("%d\n",cd_sensorFill);
+    printf("Vertical sensor value: ");
+    printf("%d\n",cd_sensorVertical);
+    printf("Temperature value: ");
+    printf("%d\n",td_temp);
+    printf("\n");
+}
