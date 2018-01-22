@@ -72,6 +72,12 @@ void printHardwareValues();
 #define BINFULLDIST 5.0
 #define BINEMPTYDIST 60.0
 
+//State Constants
+#define ERRORSTATE 0
+#define TRAVELSTATE 1
+#define COLLECTIONSTATE 2
+#define DISPOSALSTATE 3
+
 //USER COMMAND
 #define NO_COMMAND 0
 #define SHUT_DOWN 1
@@ -427,9 +433,25 @@ void collection(){
             break
         }
     }
-    if (ei_userCommand != NO_COMMAND)
-    {
-        // Use the command function
+    if(ei_userCommand != NO_COMMAND){
+        //switch cases to adjust state based on user command
+        switch(ei_userCommand){
+            case SHUT_DOWN:
+                //do shutdown stuff
+                logFunc();
+                system("sudo shutdown -h now");
+                break;
+            case STOP;
+                //do stop stuff
+                break;
+            case MOVE_TO_COLLECTIONS:
+                //do move to collections stuff
+                break;
+            case MOVE_TO_DISPOSAL:
+                //do move to disposal stuff
+                break;
+            break; //break out of while loop after changing state based on user command
+        }
     }
     else if (cd_sensorFill <= BINFULLDIST)
     {
@@ -495,7 +517,7 @@ void binLevelDetect(){
 void overheatDiag(){
     //LAN9512 has operating range of 0 celsius to 70 celsius
     // 250mV at 25 celsius and 20mV/(degree celsius)
-    if td_temp >= 
+    if td_temp >=
 }
 void batteryLowDiag(){
 
