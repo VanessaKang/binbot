@@ -10,6 +10,10 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <ifaddrs.h>
 
 //declare primary functions
 void *FSM(void* ptr);
@@ -50,6 +54,8 @@ void noBinDiag();
 void ultraSensDiag();
 void motorDiag();
 void connectionDiag();
+
+void showIP();
 
 //DIGITAL IO Pi GPIO pins
 #define PIN_TEMP 5
@@ -101,6 +107,9 @@ int si_serverTime;
 int si_dataTime;
 int si_clockTime;
 
+//Host name IP
+char host[NI_MAXHOST];
+
 int runTime = 50;
 
 //Declare time variable for timing purposes
@@ -114,6 +123,7 @@ int main(){
 //Setup hardware functionality
 setupPins();
 setupi2c();
+showIP();
 
 //declare local variables
 int placeholder;
@@ -345,38 +355,53 @@ void writeData(int val){
 }
 
 void rightMotorForward(){
-  digitalWrite(PIN_RMFWD,HIGH);
-  digitalWrite(PIN_RMRVS,LOW);
+ 	digitalWrite(PIN_RMFWD,HIGH);
+	digitalWrite(PIN_RMRVS,LOW);
 }
 
 void rightMotorReverse(){
-  digitalWrite(PIN_RMRVS,HIGH);
-  digitalWrite(PIN_RMFWD,LOW);
+	digitalWrite(PIN_RMRVS,HIGH);
+	digitalWrite(PIN_RMFWD,LOW);
 }
 
 void leftMotorForward(){
-  digitalWrite(PIN_LMFWD,HIGH);
-  digitalWrite(PIN_LMRVS,LOW);
+	digitalWrite(PIN_LMFWD,HIGH);
+	digitalWrite(PIN_LMRVS,LOW);
 }
 
 void leftMotorReverse(){
-  digitalWrite(PIN_LMRVS,HIGH);
-  digitalWrite(PIN_LMFWD,LOW);
+	digitalWrite(PIN_LMRVS,HIGH);
+	digitalWrite(PIN_LMFWD,LOW);
+}
+
+void rightMotorStop(){
+	digitalWrite(PIN_RMFWD,LOW);
+	digitalWrite(PIN_RMRVS,LOW);
+}
+
+void leftMotorStop(){
+	digitalWrite(PIN_LMFWD,LOW);
+	digitalWrite(PIN_LMRVS,LOW);
 }
 
 void moveForward(){
-  rightMotorForward();
-  leftMotorForward();
+	rightMotorForward();
+	leftMotorForward();
+}
+
+void allStop(){
+	rightMotorStop();
+	leftMotorStop();
 }
 
 void adjustAnglePositive(){
-  rightMotorForward();
-  leftMotorReverse();
+	rightMotorForward();
+	leftMotorReverse();
 }
 
 void adjustAngleNegative(){
-  rightMotorReverse();
-  leftMotorForward();
+	rightMotorReverse();
+	leftMotorForward();
 }
 
 void errorState(){
@@ -436,3 +461,36 @@ void motorDiag(){
 void connectionDiag(){
 
 }
+
+void showIP()
+{
+    struct ifaddrs *ifaddr, *ifa;
+    int s;
+
+    if (getifaddrs(&ifaddr) == -1)
+    {
+        perror("getifaddrs");
+        exit(EXIT_FAILURE);
+    }
+
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+    {
+        if (ifa->ifa_addr == NULL)
+            continue;
+
+        s=getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in),host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+
+        if( /*(strcmp(ifa->ifa_name,"wlan0")==0)&&( */ ifa->ifa_addr->sa_family==AF_INET) // )
+        {
+            if (s != 0)
+            {
+                printf("getnameinfo() failed: %s\n", gai_strerror(s));
+                exit(EXIT_FAILURE);
+            }
+            printf("Interface : <%s>\n",ifa->ifa_name );
+            printf("Address : <%s>\n", host);
+        }
+    }
+}
+
