@@ -21,7 +21,7 @@ class LoggerHelper(object):
 
 def setup_logging():
     # Default logging settings
-    LOG_FILE = "/home/pi/log.log"
+    LOG_FILE = "./log.log"
     LOG_LEVEL = logging.INFO
 
     # Define and parse command line arguments
@@ -106,15 +106,8 @@ def main():
                 break
 
             print "Received [%s]" % data
-
-            # Handle the request
-            if data == "1":
-                response = "How is it going?" 
-            elif data == "2":
-                response = "No Sir Fuck You"
-            # Insert more here
-            else:
-                response = "msg:Not supported"
+            
+            response = "test" 
 
             client_sock.send(response)
             print "Sent back [%s]" % response

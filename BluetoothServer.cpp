@@ -20,18 +20,17 @@ clock_t t;
 void sendStatusToBinCompanion(); 
 void sendFeedbackToBinCompanion(); 
 void handleRecvMsg();
-int awaitConnection(int socket); 
+int awaitConnection(int socket, sockaddr_rc rem_addr, socklen_t opt); 
 void closeConnection(int client, int socket); 
-void* readOnThread(); 
+void* readOnThread(void* ptr); 
 
 //Main =======================================================================================
 int main(int argc, char **argv) {
 	//Variable Declaration 
 	struct sockaddr_rc loc_addr = { 0 }, rem_addr = { 0 }; 
 	socklen_t opt = sizeof(rem_addr); 
-
-	char buf[1024] = { 0 }; 
-	int s, client, numbytes; 
+	char address[18] = "B8:27:EB:08:F9:52";
+	int sock, client, numbytes; 
 
 	pthread_t readThread; 
 
@@ -39,23 +38,24 @@ int main(int argc, char **argv) {
 	t = clock()/CLOCKS_PER_SEC; 
 
 	//Allocate Socket
-	s = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+	sock = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
 
 	// bind socket to port 1 of the first available local bluetooth adapter
 	loc_addr.rc_family = AF_BLUETOOTH;
-	loc_addr.rc_bdaddr = *BDADDR_ANY;
+	//loc_addr.rc_bdaddr = *BDADDR_ANY;
+	str2ba( address,&loc_addr.rc_bdaddr);
 	loc_addr.rc_channel = (uint8_t)1;
-	bind(s, (struct sockaddr *)&loc_addr, sizeof(loc_addr));
+	bind(sock, (struct sockaddr *)&loc_addr, sizeof(loc_addr));
 
 	//Wait to connect to a device  
-	client = awaitConnection(s);
+	client = awaitConnection(sock, rem_addr, opt);
 
 	//Main Loop 
 	while (true) {
 		//Spawn thread to read data off of, use main thread to write to 
-		int result = pthread_create(readThread, NULL, readOnThread(), NULL); 
+		int result = pthread_create(&readThread, NULL, readOnThread, (void*) &client); 
 		if (result != 0) {
-			fprint(stderr, "Thread Creation Failed\n"); 
+			printf("Thread Creation Failed\n"); 
 		}
 
 
@@ -68,14 +68,14 @@ int main(int argc, char **argv) {
 		}
 	}
 	
-	closeConnection(client, socket); 
+	closeConnection(client, sock); 
 	return 0;
 }//main 
 
 //Functions ==================================================================================
 //This function sends out current status variables periodically 
 void sendStatusToBinCompanion() {
-	cout << "Writing.."
+	printf("Writing..");
 }
 
 //THis function sends back information in if behviour is being excuted back to user 
@@ -89,14 +89,14 @@ void handleRecvMsg() {
 }
 
 //This function sets the socket to wait for the application to try and connect 
-int awaitConnection(int socket) {
-
+int awaitConnection(int socket, sockaddr_rc rem_addr, socklen_t opt) {
+	char buf[1024] = { 0 };
 
 	// put socket into listening mode
-	listen(s, 1);
+	listen(socket, 1);
 
 	// accept one connection
-	int client = accept(s, (struct sockaddr *)&rem_addr, &opt);
+	int client = accept(socket, (struct sockaddr*) &rem_addr, &opt);
 
 	ba2str(&rem_addr.rc_bdaddr, buf);
 	fprintf(stderr, "accepted connection from %s\n", buf);
@@ -109,14 +109,18 @@ void closeConnection(int client, int socket) {
 
 	// close connection
 	close(client);
-	close(s);
+	close(socket);
+	return; 
 
 }
 
 //This code excutes reading from a socket on a seperate thread 
-void* readOnThread() {
+void* readOnThread(void* ptr) {
+	char buf[1024] = { 0 };
+	int client = *((int*) ptr); 
+
 	// read data from the client
-	bytes_read = read(client, buf, sizeof(buf));
+	int bytes_read = read(client, buf, sizeof(buf));
 	if (bytes_read > 0) {
 		printf("received [%s]\n", buf);
 	}
