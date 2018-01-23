@@ -59,6 +59,17 @@ void connectionDiag();
 #define PIN_LMRVS 4
 #define PIN_SERVO 17
 
+// Define Constants used in code **** Needs to be edited
+#define BINFULLDIST 5.0
+
+#define NO_COMMAND 0
+#define SHUT_DOWN 1
+#define STOP 2
+#define MOVE_TO_COLLECTIONS 3
+#define MOVE_TO_DISPOSAL 4
+
+
+
 //i2c global variables
 int file_i2c;
 int length;
@@ -392,7 +403,7 @@ void collection(){
 }
 
 void disposal(){
-
+	
 }
 
 void endFunc(){
