@@ -39,6 +39,7 @@ void leftMotorReverse();
 void moveForward();
 void adjustAnglePositive();
 void adjustAngleNegative();
+void allStop();
 
 
 //declare sensor/actuator functions
