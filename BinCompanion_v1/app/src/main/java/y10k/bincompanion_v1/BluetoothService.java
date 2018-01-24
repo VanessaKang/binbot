@@ -1,15 +1,17 @@
-package y10k.bincompanion_v2;
+package y10k.bincompanion_v1;
 
 import android.app.Service;
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
-import android.os.Messenger;
-import android.os.RemoteException;
+import android.os.ResultReceiver;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -21,20 +23,12 @@ import java.util.UUID;
 
 import static android.content.ContentValues.TAG;
 
-/*
-    This service will create a new thread managing the conecction of the application to the
-    Bluetooth server on the BinBot
-        - Receive intent from Service start (DONE)
-        - parse device name and addresss (DONE)
-        - build thread using this information (DONE)
-        - handler to allow MainActivity to communicate
- */
-
 public class BluetoothService extends Service {
-    //VARIABLE DECLARATION
+    //Variable Declaration
     private int mConnectionState = CONSTANTS.NOT_CONNECTED;
     private ConnectedThread mConnectedThread = null;
     private BluetoothSocket mBluetoothSocket = null;
+    private Bundle savedData;
 
     //Handles Incoming bytes from Bluetooth Server
     private Handler mHandler = new Handler() {
@@ -44,80 +38,45 @@ public class BluetoothService extends Service {
 
             if(msg.what == CONSTANTS.MESSAGE_READ){
                 //switch ((int) msg.obj){
-                    //Decode Recieved Bytes
-                    //Perform Operations Based on Received Bytes
-                    Toast.makeText(getApplicationContext(), (String) msg.obj, Toast.LENGTH_SHORT).show();
+                //Decode Recieved Bytes
+                //Perform Operations Based on Received Bytes
+                Toast.makeText(getApplicationContext(), (String) msg.obj, Toast.LENGTH_SHORT).show();
                 //}
             }
         }//handle message
     };
 
-    //Handles Incoming Messages from MainActivity
-    private Messenger mMessenger = new Messenger(new ServerHandler());
-    class ServerHandler extends Handler {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what){
-                case CONSTANTS.CALL:
-                    if(mConnectionState == CONSTANTS.CONNECTED){
-                        write("CALL");
-                    }
-                    break;
-                case CONSTANTS.RESUME:
-                    if(mConnectionState == CONSTANTS.CONNECTED){
-                        write("RESUME");
-                    }
-                    break;
-                case CONSTANTS.STOP:
-                    if(mConnectionState == CONSTANTS.CONNECTED){
-                        write("STOP");
-                    }
-                    break;
-                case CONSTANTS.RETURN:
-                    if(mConnectionState == CONSTANTS.CONNECTED){
-                        write("RETURN");
-                    }
-                    break;
-                case CONSTANTS.SHUTDOWN:
-                    if(mConnectionState == CONSTANTS.CONNECTED){
-                        write("SHUTDOWN");
-                    }
-                    break;
-                case CONSTANTS.CONNECT:
-                    if(mConnectionState == CONSTANTS.NOT_CONNECTED) {
-                        BluetoothDevice device = (BluetoothDevice) msg.obj;
-                        connect(device);
-                    }
-                    break;
-                case CONSTANTS.GETSTATE:
-                    //TODO
-                    break;
-                default:
-                    super.handleMessage(msg);
-            }//switch
-        }//handleMessage
-    }//ServerHandler
-//==================================================================================================
-    public BluetoothService() {} //Constructor
+    //Used to send messages to MainActivity
+    private ResultReceiver mReceiver = null;
 
-    @Override
-    public IBinder onBind(Intent intent) {return mMessenger.getBinder();}//onBind
-
-    @Override
-    public boolean onUnbind(Intent intent) {return false;} //onUnbind
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        return super.onStartCommand(intent, flags, startId);
+    //Create binder to bind activites to the service
+    private final IBinder mBinder = new LocalBinder();
+    public class LocalBinder extends Binder {
+        BluetoothService getService() {
+            return BluetoothService.this;
+        }
     }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        mReceiver = intent.getParcelableExtra("receiver");
+        return mBinder;
+    }//onBind
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        return false;
+    }//onUnbind
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
+
         if(mConnectedThread != null){
             mConnectedThread.cancel();
         }
-        super.onDestroy();
     }
+
     //==============================================================================================
     public void write(String command){
         if(mConnectionState == CONSTANTS.CONNECTED) {
@@ -157,6 +116,8 @@ public class BluetoothService extends Service {
                         }
                     }
                     if (!fail) {
+                        savedData.putInt("state", CONSTANTS.CONNECTED);
+                        mReceiver.send(2, savedData);
                         mConnectedThread = new ConnectedThread(mBluetoothSocket);
                         mConnectedThread.start();
                         Log.i(TAG, "Started");

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BinCompanion_v2</string>
+    <string name="app_name">BinCompanion_v1</string>
 
     <!-- These are menu strings-->
     <string name="pairMenuButton_Label">Pair</string>
