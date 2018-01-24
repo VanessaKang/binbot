@@ -108,11 +108,11 @@ double td_temp;
 double cmd_objDist;
 double ed_appRssi;
 double ed_beaconRssi;
-double cd_sensorLeft;
-double cd_sensorFront;
-double cd_sensorRight;
-double cd_sensorFill;
-double cd_sensorVertical;
+int ci_sensorLeft;
+int ci_sensorFront;
+int ci_sensorRight;
+int ci_sensorFill;
+int ci_sensorVertical;
 
 // New proposed variables from Component document
 int ei_userCommand;
@@ -267,23 +267,23 @@ void *Data(void *ptr){
 
     	writeData(1);
     	delay(100);
-    	cd_sensorFront = readData();
+    	ci_sensorFront = readData();
 
     	writeData(2);
     	delay(100);
-    	cd_sensorRight = readData();
+    	ci_sensorRight = readData();
 
     	writeData(3);
     	delay(100);
-    	cd_sensorLeft = readData();
+    	ci_sensorLeft = readData();
 
     	writeData(4);
     	delay(100);
-    	cd_sensorFill = readData();
+    	ci_sensorFill = readData();
 
     	writeData(5);
     	delay(100);
-    	cd_sensorVertical = readData();
+    	ci_sensorVertical = readData();
 
 
     	writeData(6);
@@ -424,7 +424,7 @@ void travel(){
 }
 
 void collection(){
-    while ((cd_sensorFill >= BINEMPTYDIST) && (ei_userCommand == NO_COMMAND)){
+    while ((ci_sensorFill >= BINEMPTYDIST) && (ei_userCommand == NO_COMMAND)){
         // Making it a super super
         if (ei_error != 0)
         {
@@ -463,7 +463,7 @@ void collection(){
 }
 
 void disposal(){
-	while( (cd_sensorFill < BINFULLDIST) && (ei_userCommand == NO_COMMAND) ){
+	while( (ci_sensorFill < BINFULLDIST) && (ei_userCommand == NO_COMMAND) ){
 		//Stay still, wait for garbage to be disposed
 		//send message to app, error state will bring back to disposal state
 		if(ei_error != 0){
@@ -526,7 +526,7 @@ void overheatDiag(){
 	    ei_error = 1;
 	    return
 	}
-	
+
 	ei_error = 0;
 	return
 
@@ -590,16 +590,16 @@ void showIP()
 
 void printHardwareValues(){
 	printf("Front sensor value: ");
-    printf("%d\n",cd_sensorFront);
+    printf("%i\n",ci_sensorFront);
     printf("Right sensor value: ");
-    printf("%d\n",cd_sensorRight);
+    printf("%i\n",ci_sensorRight);
     printf("Left sensor value: ");
-    printf("%d\n",cd_sensorLeft);
+    printf("%i\n",ci_sensorLeft);
     printf("Fill sensor value: ");
-    printf("%d\n",cd_sensorFill);
+    printf("%i\n",ci_sensorFill);
     printf("Vertical sensor value: ");
-    printf("%d\n",cd_sensorVertical);
+    printf("%i\n",ci_sensorVertical);
     printf("Temperature value: ");
-    printf("%d\n",td_temp);
+    printf("%i\n",td_temp);
     printf("\n");
 }
