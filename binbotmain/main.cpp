@@ -524,11 +524,11 @@ void overheatDiag(){
 	if (ti_temp<= 500 or ti_temp >= 1200)
 	{
 	    ei_error = 1;
-	    return
+	    return;
 	}
 
 	ei_error = 0;
-	return
+	return;
 
 }
 void batteryLowDiag(){
