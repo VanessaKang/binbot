@@ -24,6 +24,8 @@ void errorState();
 void travel();
 void collection();
 void disposal();
+void pathFinding();
+void obstacleAvoidance();
 void endFunc();
 void logFunc();
 
@@ -69,8 +71,10 @@ void printHardwareValues();
 
 // Define Constants used in code **** Needs to be edited
 //BIN SENSOR CONSTANTS
-#define BINFULLDIST 5.0
-#define BINEMPTYDIST 60.0
+#define BINFULLDIST 5
+#define BINEMPTYDIST 60
+#define OBJAVOIDDIST 20
+#define ATDESTRSSI -40
 
 //State Constants
 #define ERRORSTATE 0
@@ -420,12 +424,64 @@ void adjustAngleNegative(){
 	leftMotorForward();
 }*/
 
-void errorState(){
+void errorState()
+{
 
 }
 
-void travel(){
-
+void travel()
+{
+    while (ei_userCommand == NO_COMMAND && ei_error == 0)
+    {
+        if ((ci_sensorFront <= OBJAVOIDDIST) || (ci_sensorLeft <= OBJAVOIDDIST) || (ci_sensorRight <= OBJAVOIDDIST) || (ed_beaconRssi >= ATDESTRSSI))
+        {
+            pathFinding();
+        }
+        else if (ed_beaconRssi >= ATDESTRSSI)
+        {
+            if (eb_nextDest == 0)
+            {
+                ei_state == COLLECTIONSTATE;
+                break;
+            }
+            if (eb_nextDest == 1)
+            {
+                ei_state = DISPOSALSTATE;
+                break;
+            }
+        }
+        else
+        {
+            obstacleAvoidance();
+        }
+    }
+    if (ei_error != 0)
+    {
+        ei_prevState = TRAVELSTATE;
+        ei_state = ERRORSTATE;
+        return;
+    }
+    if (ei_userCommand != NO_COMMAND)
+    {
+            //switch cases to adjust state based on user command
+        switch(ei_userCommand){
+            case SHUT_DOWN:
+                //do shutdown stuff
+                logFunc();
+                //system("sudo shutdown -h now");
+                break;
+            case STOP:
+                //do stop stuff
+                break;
+            case MOVE_TO_COLLECTIONS:
+                //do move to collections stuff
+                break;
+            case MOVE_TO_DISPOSAL:
+                //do move to disposal stuff
+                break;
+	return; //break out of function after receiving user command
+        }
+    }
 }
 
 void collection(){
@@ -438,7 +494,8 @@ void collection(){
             break;
         }
     }
-    if(ei_userCommand != NO_COMMAND){
+    if(ei_userCommand != NO_COMMAND)
+    {
         //switch cases to adjust state based on user command
         switch(ei_userCommand){
             case SHUT_DOWN:
@@ -504,6 +561,12 @@ void disposal(){
 		eb_nextDest = 0; //next destination is collection zone
 		return;
 	}
+}
+
+void pathFinding(){
+}
+
+void obstacleAvoidance(){
 }
 
 void endFunc(){
