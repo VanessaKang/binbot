@@ -104,7 +104,7 @@ bool eb_destReached = 0;
 bool eb_nextDest = 0;
 int ei_prevState;
 double md_botLocation;
-double td_temp;
+int ti_temp;
 double cmd_objDist;
 double ed_appRssi;
 double ed_beaconRssi;
@@ -288,7 +288,7 @@ void *Data(void *ptr){
 
     	writeData(6);
     	delay(100);
-    	td_temp = readData();
+    	ti_temp = readData();
 
     	//Turn LED Off
     	writeData(10);
@@ -521,7 +521,7 @@ void binLevelDetect(){
 void overheatDiag(){
     //LAN9512 has operating range of 0 celsius to 70 celsius
     // 750mV at 25 celsius and 10mV/(degree celsius)
-	if (td_temp<= 500 or td_temp >= 1200)
+	if (ti_temp<= 500 or ti_temp >= 1200)
 	{
 	    ei_error = 1;
 	    return
@@ -600,6 +600,6 @@ void printHardwareValues(){
     printf("Vertical sensor value: ");
     printf("%i\n",ci_sensorVertical);
     printf("Temperature value: ");
-    printf("%i\n",td_temp);
+    printf("%i\n",ti_temp);
     printf("\n");
 }
