@@ -108,11 +108,11 @@ int ti_temp;
 double cmd_objDist;
 double ed_appRssi;
 double ed_beaconRssi;
-int cd_sensorLeft;
-int cd_sensorFront;
-int cd_sensorRight;
-int cd_sensorFill;
-int cd_sensorVertical;
+int ci_sensorLeft;
+int ci_sensorFront;
+int ci_sensorRight;
+int ci_sensorFill;
+int ci_sensorVertical;
 
 // New proposed variables from Component document
 int ei_userCommand;
@@ -190,33 +190,33 @@ void *FSM(void *ptr){
 		}
 
 		switch (ei_state){
-			case 0:
+			case ERRORSTATE:
 			if ( fmod(time,1) == 0){
 				printf("Error State = %i \n ", ei_state);
 				//std::cout << float( clock() ) /CLOCKS_PER_SEC;
 				//Check for an error here and take remedial actions?, Diagnostics are run by another
 				//thread so we just need to check the global variable indicating errors (ei_error?)
-
-				ei_prevState = 0;
+                errorState();
+				ei_prevState = ERRORSTATE;
 			}
 			break;
-			case 1: //Travel State
+			case TRAVELSTATE: //Travel State
 				printf("Travel State = %i \n", ei_state);
 				//Run Travel Code here
-
-				ei_prevState = 1;
+                travel();
+				ei_prevState = TRAVELSTATE;
 			break;
-			case 2: //Collection State
+			case COLLECTIONSTATE: //Collection State
 				printf("Collection State = %i \n", ei_state);
 				//Run Collection Code here
-
-				ei_prevState = 2;
+                collection();
+				ei_prevState = COLLECTIONSTATE;
 			break;
-			case 3: // Disposal State
+			case DISPOSALSTATE: // Disposal State
 				printf("Disposal State = %i \n", ei_state);
 				//Run Disposal Code here
-
-				ei_prevState = 3;
+                disposal();
+				ei_prevState = DISPOSALSTATE;
 			break;
 		}
 	}
@@ -272,23 +272,23 @@ void *Data(void *ptr){
 
     	writeData(1);
     	delay(100);
-    	cd_sensorFront = readData();
+    	ci_sensorFront = readData();
 
     	writeData(2);
     	delay(100);
-    	cd_sensorRight = readData();
+    	ci_sensorRight = readData();
 
     	writeData(3);
     	delay(100);
-    	cd_sensorLeft = readData();
+    	ci_sensorLeft = readData();
 
     	writeData(4);
     	delay(100);
-    	cd_sensorFill = readData();
+    	ci_sensorFill = readData();
 
     	writeData(5);
     	delay(100);
-    	cd_sensorVertical = readData();
+    	ci_sensorVertical = readData();
 
 
     	writeData(6);
@@ -429,7 +429,7 @@ void travel(){
 }
 
 void collection(){
-    while ((cd_sensorFill >= BINEMPTYDIST) && (ei_userCommand == NO_COMMAND)){
+    while ((ci_sensorFill >= BINEMPTYDIST) && (ei_userCommand == NO_COMMAND)){
         // Making it a super super
         if (ei_error != 0)
         {
@@ -468,7 +468,7 @@ void collection(){
 }
 
 void disposal(){
-	while( (cd_sensorFill < BINFULLDIST) && (ei_userCommand == NO_COMMAND) ){
+	while( (ci_sensorFill < BINFULLDIST) && (ei_userCommand == NO_COMMAND) ){
 		//Stay still, wait for garbage to be disposed
 		//send message to app, error state will bring back to disposal state
 		if(ei_error != 0){
@@ -515,9 +515,6 @@ void logFunc(){
 	//put code here to write variables to a log
 }
 
-void binLevelDetect(){
-	//detects fullness of bin from waste
-}
 
 //********************* Sensor/Actuator Functions *****************************//
 
