@@ -17,13 +17,15 @@
 
 //declare primary functions
 void *FSM(void* ptr);
-void *Comms(void* ptr);
-void *Diag(void* ptr);
+void *bluetoothServer(void* ptr);
+void *errorDiag(void* ptr);
 void *Data(void* ptr);
 void errorState();
 void travel();
 void collection();
 void disposal();
+void pathFinding();
+void obstacleAvoidance();
 void endFunc();
 void logFunc();
 
@@ -69,8 +71,11 @@ void printHardwareValues();
 
 // Define Constants used in code **** Needs to be edited
 //BIN SENSOR CONSTANTS
-#define BINFULLDIST 5.0
-#define BINEMPTYDIST 60.0
+#define BINFULLDIST 5
+#define BINEMPTYDIST 60
+#define OBJAVOIDDIST 20
+#define ATDESTRSSI -40
+
 
 //State Constants
 #define ERRORSTATE 0
@@ -122,7 +127,7 @@ char eC_appStatusSend;
 
 //New proposed variables of time
 int si_fsmTime;
-int si_diagTime;
+int si_errorDiagTime;
 int si_serverTime;
 int si_dataTime;
 int si_clockTime;
@@ -151,14 +156,14 @@ int placeholder;
 //Set up threads
 pthread_t thread1, thread2, thread3, thread4;
 
-int iret1FSM, iret2Comms, iret3Diag, iret4Data;
+int iret1FSM, iret2bluetoothServer, iret3errorDiag, iret4Data;
 
 //Initialize global variables for start of FSM, Diagnostics and Communications (maybe read from a log to get last values)
 
 //create independent threads to run each function
 iret1FSM = pthread_create( &thread1, NULL, FSM, NULL);
-iret2Comms = pthread_create( &thread2, NULL, Comms, NULL);
-iret3Diag = pthread_create( &thread3, NULL, Diag, NULL);
+iret2bluetoothServer = pthread_create( &thread2, NULL, bluetoothServer, NULL);
+iret3errorDiag = pthread_create( &thread3, NULL, errorDiag, NULL);
 iret4Data = pthread_create( &thread4, NULL, Data, NULL);
 
 //wait for each thread to finish before completing program
@@ -185,7 +190,7 @@ void *FSM(void *ptr){
 		float time = ( float( clock() ) /CLOCKS_PER_SEC );
 
 		if((float( clock() - begin_time ) /CLOCKS_PER_SEC) > runTime){
-			printf("Diag has exited \n");
+			printf("errorDiag has exited \n");
 			break;
 		}
 
@@ -223,18 +228,18 @@ void *FSM(void *ptr){
 }
 
 
-void *Comms(void *ptr){
-	printf("Comms Thread Running \n");
+void *bluetoothServer(void *ptr){
+	printf("bluetoothServer Thread Running \n");
 	while(1){
 		if((float( clock() - begin_time ) /CLOCKS_PER_SEC) > runTime){
-			printf("Comms has exited \n");
+			printf("bluetoothServer has exited \n");
 			break;
 		}
 	}
 }
 
-void *Diag(void *ptr){
-	printf("Diag Thread Running \n");
+void *errorDiag(void *ptr){
+	printf("errorDiag Thread Running \n");
 	while(1){
 		overheatDiag();
 		batteryLowDiag();
@@ -419,9 +424,61 @@ void errorState(){
 
 }
 
-void travel(){
-
+void travel()
+{
+    while (ei_userCommand == NO_COMMAND && ei_error == 0)
+    {
+        if ((ci_sensorFront <= OBJAVOIDDIST) || (ci_sensorLeft <= OBJAVOIDDIST) || (ci_sensorRight <= OBJAVOIDDIST) || (ed_beaconRssi >= ATDESTRSSI))
+        {
+            pathFinding();
+        }
+        else if (ed_beaconRssi >= ATDESTRSSI)
+        {
+            if (eb_nextDest == 0)
+            {
+                ei_state == COLLECTIONSTATE;
+                break;
+            }
+            if (eb_nextDest == 1)
+            {
+                ei_state = DISPOSALSTATE;
+                break;
+            }
+        }
+        else
+        {
+            obstacleAvoidance();
+        }
+    }
+    if (ei_error != 0)
+    {
+        ei_prevState = TRAVELSTATE;
+        ei_state = ERRORSTATE;
+        return;
+    }
+    if (ei_userCommand != NO_COMMAND)
+    {
+            //switch cases to adjust state based on user command
+        switch(ei_userCommand){
+            case SHUT_DOWN:
+                //do shutdown stuff
+                logFunc();
+                //system("sudo shutdown -h now");
+                break;
+            case STOP:
+                //do stop stuff
+                break;
+            case MOVE_TO_COLLECTIONS:
+                //do move to collections stuff
+                break;
+            case MOVE_TO_DISPOSAL:
+                //do move to disposal stuff
+                break;
+	return; //break out of function after receiving user command
+        }
+    }
 }
+
 
 void collection(){
     while ((ci_sensorFill >= BINEMPTYDIST) && (ei_userCommand == NO_COMMAND)){
@@ -504,6 +561,12 @@ void disposal(){
 void endFunc(){
 	printf("FSM has exited \n");
 	std::cout << float( clock() ) /CLOCKS_PER_SEC; //print out time spent running program
+}
+
+void pathFinding(){
+}
+
+void obstacleAvoidance(){
 }
 
 void logFunc(){
