@@ -123,6 +123,10 @@ int ei_userCommand;
 char eC_appCmdRecv;
 char eC_appStatusSend;
 
+int angleMove;
+int movePos;
+int moveNeg;
+
 
 //New proposed variables of time
 int si_fsmTime;
@@ -148,6 +152,9 @@ int main(){
 //setupPins();
 //setupi2c();
 //showIP();
+moveNeg = 0;
+movePos = 0;
+angleMove = 0;
 
 //declare local variables
 int placeholder;
@@ -564,6 +571,56 @@ void disposal(){
 }
 
 void pathFinding(){
+        //make sure prev
+		//Checks if there is an error and goes into error state
+		if(ei_error != 0){
+			ei_prevState = ei_state;
+			ei_state = ERRORSTATE; //set state to 0 for error state due to error
+            return;
+		}
+
+		//Move forwards in a meaningful way for 1 second
+		ed_appRssi = ed_beaconRssi;
+		//moveForward();
+		//delay(1000)
+
+		//If previous signal indicates were getting closer
+		if (ed_appRssi < ed_beaconRssi)
+		{
+            // Keep in mind we're moving forward twice
+            //moveForward();
+            //we can change delay here from the other
+            //delay(1000);
+		}
+		else if ((angleMove <90) && (movePos < 9))
+		{
+            //adjustAnglePositive();
+            //We have to see if this will make it move 10 degrees
+            //delay(500);
+            angleMove+= 10;
+            movePos += 1;
+		}
+        else if ((angleMove < -90) && (moveNeg < 18))
+		{
+            //adjustAngleNegative();
+            //We have to see if this will make it move 10 degrees
+            //delay(500);
+            angleMove-= 10;
+            moveNeg += 1;
+
+		}
+		else{
+            // GO 180 depending on where it is.
+            //adjustAngleNegative(); adjustAnglePositive()
+            //delay(2000);
+
+            angleMove = 0;
+            moveNeg = 0;
+            movePos = 0;
+		}
+    //Goes out to check other sensor values if we need obstacle or if there is an error
+    return;
+
 }
 
 void obstacleAvoidance(){
