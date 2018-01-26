@@ -1,173 +1,163 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="y10k.bincompanion_mini.MainActivity">
 
-    <!-- Covers bottom Area of the screen-->
-    <FrameLayout
-        android:id="@+id/button_area"
-        android:layout_alignParentBottom="true"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/top_area"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/guideline"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
+            android:id="@+id/label_area"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
             android:orientation="vertical"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
-            <Button
-                android:id="@+id/call_button"
-                android:text="@string/call_but"
-                android:padding="16dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginBottom="10dp"
-                android:layout_marginLeft="50dp"
-                android:layout_marginRight="50dp"
-                android:layout_gravity="center"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+            <TextView
+                android:id="@+id/connection_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/connection_label" />
 
-            <Button
-                android:id="@+id/return_button"
-                android:text="@string/return_but"
-                android:padding="16dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginBottom="10dp"
-                android:layout_marginLeft="50dp"
-                android:layout_marginRight="50dp"
-                android:layout_gravity="center"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+            <TextView
+                android:id="@+id/state_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/state_label" />
 
-            <Button
-                android:id="@+id/stop_button"
-                android:text="@string/stop_but"
-                android:padding="16dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginBottom="10dp"
-                android:layout_marginLeft="50dp"
-                android:layout_marginRight="50dp"
-                android:layout_gravity="center"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+            <TextView
+                android:id="@+id/fill_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/fill_label" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/content_area"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/label_area"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/connection_content"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="PLACEHOLDER" />
+
+            <TextView
+                android:id="@+id/state_content"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="PLACEHOLDER" />
+
+            <TextView
+                android:id="@+id/fill_content"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="PLACEHOLDER" />
 
         </LinearLayout>
-    </FrameLayout>
 
-    <!--Covers Top Area of the screen-->
-    <LinearLayout
+    </android.support.constraint.ConstraintLayout>
+    
+    <android.support.constraint.Guideline
+        android:id="@+id/guideline"
         android:orientation="horizontal"
-        android:layout_above="@+id/button_area"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintGuide_percent="0.5"/>
 
-        <LinearLayout
-            android:id="@+id/status_labels"
-            android:layout_weight="0.3"
-            android:orientation="vertical"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent">
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/bottom_area"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/guideline">
 
-            <TextView
-                android:text="@string/nickname"
-                android:textSize="@dimen/txtSize"
-                android:padding="20dp"
-                android:layout_gravity="center"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+        <Button
+            android:id="@+id/call_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:text="@string/call_button"
+            android:onClick="test"
+            app:layout_constraintBottom_toTopOf="@+id/return_button"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
-            <TextView
-                android:text="@string/status"
-                android:textSize="@dimen/txtSize"
-                android:padding="20dp"
-                android:layout_gravity="center"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+        <Button
+            android:id="@+id/return_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:text="@string/return_button"
+            app:layout_constraintBottom_toTopOf="@+id/resume_button"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
-            <TextView
-                android:text="@string/batt"
-                android:textSize="@dimen/txtSize"
-                android:padding="20dp"
-                android:layout_gravity="center"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+        <Button
+            android:id="@+id/resume_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:text="@string/resume_button"
+            android:visibility="invisible"
+            android:enabled="false"
+            app:layout_constraintBottom_toTopOf="@+id/shutdown_button"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
-            <TextView
-                android:text="@string/fill"
-                android:textSize="@dimen/txtSize"
-                android:padding="20dp"
-                android:layout_gravity="center"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+        <Button
+            android:id="@+id/stop_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:text="@string/stop_button"
+            app:layout_constraintBottom_toTopOf="@+id/shutdown_button"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
-            <TextView
-                android:text="@string/rssi"
-                android:textSize="@dimen/txtSize"
-                android:padding="20dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/status_info"
-            android:layout_weight="0.7"
-            android:orientation="vertical"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent">
-
-            <TextView
-                android:id="@+id/nickname"
-
-                android:text="PLACEHOLDER"
-                android:textSize="@dimen/txtSize"
-                android:padding="20dp"
-
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-
-            <TextView
-                android:id="@+id/status"
-
-                android:text="PLACEHOLDER"
-                android:textSize="@dimen/txtSize"
-                android:padding="20dp"
-
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-
-            <ProgressBar
-                android:id="@+id/batt"
-
-                style="@android:style/Widget.ProgressBar.Horizontal"
-                android:progress="0"
-                android:padding="20dp"
-
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-
-            <ProgressBar
-                android:id="@+id/fill"
-
-                style="@android:style/Widget.ProgressBar.Horizontal"
-                android:progress="0"
-                android:padding="20dp"
-
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-
-            <TextView
-                android:id="@+id/rssi"
-
-                android:text="PLACEHOLDER"
-                android:textSize="@dimen/txtSize"
-                android:padding="20dp"
-
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-
-        </LinearLayout>
-    </LinearLayout>
-</RelativeLayout>
+        <Button
+            android:id="@+id/shutdown_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:text="@string/shutdown_button"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+    </android.support.constraint.ConstraintLayout>
+</android.support.constraint.ConstraintLayout>
