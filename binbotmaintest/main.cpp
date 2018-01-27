@@ -468,7 +468,7 @@ void travel()
         ei_state = ERRORSTATE;
         return;
     }
-    if (ei_userCommand != NO_COMMAND)
+    else if (ei_userCommand != NO_COMMAND)
     {
             //switch cases to adjust state based on user command
         switch(ei_userCommand){
@@ -492,16 +492,18 @@ void travel()
 }
 
 void collection(){
-    while ((ci_sensorFill >= BINEMPTYDIST) && (ei_userCommand == NO_COMMAND)){
-        // Making it a super super
-        if (ei_error != 0)
-        {
-            ei_prevState = ei_state;
-            ei_state = ERRORSTATE;
-            break;
-        }
+    while ((ci_sensorFill >= BINEMPTYDIST) && (ei_userCommand == NO_COMMAND) && (ei_error == 0)){
+        // Stay and wait for garbage to be full
+        // do nothing for a set delay
     }
-    if(ei_userCommand != NO_COMMAND)
+
+    if (ei_error != 0)
+    {
+        ei_prevState = ei_state;
+        ei_state = ERRORSTATE;
+        return;
+    }
+    else if(ei_userCommand != NO_COMMAND)
     {
         //switch cases to adjust state based on user command
         switch(ei_userCommand){
@@ -519,7 +521,7 @@ void collection(){
             case MOVE_TO_DISPOSAL:
                 //do move to disposal stuff
                 break;
-	return; //break out of function after receiving user command
+        return; //break out of function after receiving user command
         }
     }
     else
@@ -532,17 +534,20 @@ void collection(){
 }
 
 void disposal(){
-	while( (ci_sensorFill < BINFULLDIST) && (ei_userCommand == NO_COMMAND) ){
+	while( (ci_sensorFill < BINFULLDIST) && (ei_userCommand == NO_COMMAND) && (ei_error == 0)){
 		//Stay still, wait for garbage to be disposed
-		//send message to app, error state will bring back to disposal state
-		if(ei_error != 0){
+
+	}
+
+			//send message to app, error state will bring back to disposal state
+    if(ei_error != 0)
+    {
 			ei_prevState = ei_state;
 			ei_state = ERRORSTATE; //set state to 0 for error state due to error
             break;
-		}
-	}
+    }
 
-	if(ei_userCommand != NO_COMMAND){
+	else if(ei_userCommand != NO_COMMAND){
 		//switch cases to adjust state based on user command
 		switch(ei_userCommand){
 			case SHUT_DOWN:
