@@ -544,7 +544,7 @@ void disposal(){
     {
 			ei_prevState = ei_state;
 			ei_state = ERRORSTATE; //set state to 0 for error state due to error
-            break;
+            return;
     }
 
 	else if(ei_userCommand != NO_COMMAND){
