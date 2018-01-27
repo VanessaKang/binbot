@@ -123,9 +123,9 @@ int ei_userCommand;
 char eC_appCmdRecv;
 char eC_appStatusSend;
 
-int angleMove;
-int movePos;
-int moveNeg;
+int angleMove = 0;
+int movePos = 0;
+int moveNeg = 0;
 
 
 //New proposed variables of time
@@ -152,9 +152,6 @@ int main(){
 //setupPins();
 //setupi2c();
 //showIP();
-moveNeg = 0;
-movePos = 0;
-angleMove = 0;
 
 //declare local variables
 int placeholder;
