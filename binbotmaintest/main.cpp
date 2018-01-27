@@ -475,13 +475,39 @@ void travel()
                 //system("sudo shutdown -h now");
                 break;
             case STOP:
-                //do stop stuff
+                //OPTION 1: =============================================
+                //while there is no error and userCommand is still stop
+                while ((ei_error == 0) && (ei_userCommand != STOP))
+                {
+                    //allStop();
+                }
+
+                break;
+                //=======================================================
+
+                //Second option==========================================
+                //It will stop
+                    //allStop();
+                //Exit the function and make it come back to travel state
+                //makes sure it checks to see if user_command is still stop
+                    //ei_state = TRAVELSTATE;
+                    //break;
+                //========================================================
+
                 break;
             case MOVE_TO_COLLECTIONS:
                 //do move to collections stuff
+                eb_nextDest = 0;
+                ei_state = TRAVELSTATE;
+                ei_userCommand = NO_COMMAND;
+                //ei_prevState = TRAVELSTATE;
                 break;
             case MOVE_TO_DISPOSAL:
                 //do move to disposal stuff
+                eb_nextDest = 1;
+                ei_state = TRAVELSTATE;
+                ei_userCommand = NO_COMMAND;
+                //ei_prevState = TRAVELSTATE;
                 break;
 	return; //break out of function after receiving user command
         }
@@ -510,13 +536,38 @@ void collection(){
                 //system("sudo shutdown -h now");
                 break;
             case STOP:
-                //do stop stuff
+                //OPTION 1: =============================================
+                //while there is no error and userCommand is still stop
+                while ((ei_error == 0) && (ei_userCommand != STOP))
+                {
+                    //allStop();
+                }
+
+                break;
+                //=======================================================
+
+                //Second option==========================================
+                //It will stop
+                    //allStop();
+                //Exit the function and make it come back to travel state
+                //makes sure it checks to see if user_command is still stop
+                    //ei_state = COLLECTIONSTATE;
+                    //break;
+                //========================================================
+
                 break;
             case MOVE_TO_COLLECTIONS:
                 //do move to collections stuff
+                //Collection is already in collection
+                ei_userCommand = NO_COMMAND;
+                //ei_prevState = TRAVELSTATE;
                 break;
             case MOVE_TO_DISPOSAL:
                 //do move to disposal stuff
+                eb_nextDest = 1;
+                ei_state = TRAVELSTATE;
+                ei_userCommand = NO_COMMAND;
+                ei_prevState = COLLECTIONSTATE;
                 break;
         return; //break out of function after receiving user command
         }
@@ -553,13 +604,37 @@ void disposal(){
 				//system("sudo shutdown -h now");
 				break;
 			case STOP:
-				//do stop stuff
-				break;
+
+                //OPTION 1: =============================================
+                //while there is no error and userCommand is still stop
+                while ((ei_error == 0) && (ei_userCommand != STOP))
+                {
+                    //allStop();
+                }
+
+                break;
+                //=======================================================
+
+                //Second option==========================================
+                //It will stop
+                    //allStop();
+                //Exit the function and make it come back to travel state
+                //makes sure it checks to see if user_command is still stop
+                    //ei_state = DISPOSAL;
+                    //break;
+                //========================================================
 			case MOVE_TO_COLLECTIONS:
 				//do move to collections stuff
+                eb_nextDest = 0;
+                ei_state = TRAVELSTATE;
+                ei_userCommand = NO_COMMAND;
+                ei_prevState = DISPOSALSTATE;
 				break;
 			case MOVE_TO_DISPOSAL:
 				//do move to disposal stuff
+				//Already in Disposal
+                ei_userCommand = NO_COMMAND;
+                //ei_prevState = TRAVELSTATE;
 				break;
 		return; //break out of function after receiving user command
 		}
