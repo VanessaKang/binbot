@@ -77,7 +77,7 @@ def main():
     port = server_sock.getsockname()[1]
 
     # The service UUID to advertise
-    uuid = "18f86520-e2af-408d-8fe6-d7dc8336c13a"
+    uuid = "00001101-0000-1000-8000-00805F9B34FB"
 
     # Start advertising the service
     advertise_service(server_sock, "RaspBtSrv",

@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
 	//Variable Declaration 
 	struct sockaddr_rc loc_addr = { 0 }, rem_addr = { 0 }; 
 	socklen_t opt = sizeof(rem_addr); 
-	char address[18] = "B8:27:EB:08:F9:52";
+	char address[18] = "40:D3:AE:B0:E7:37";
 	int sock, client, numbytes; 
 
 	pthread_t readThread; 
