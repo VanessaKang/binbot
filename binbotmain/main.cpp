@@ -17,13 +17,15 @@
 //declare primary functions
 //hello
 void *FSM(void* ptr);
-void *Comms(void* ptr);
-void *Diag(void* ptr);
+void *bluetoothServer(void* ptr);
+void *errorDiag(void* ptr);
 void *Data(void* ptr);
 void errorState();
 void travel();
 void collection();
 void disposal();
+void pathFinding();
+void obstacleAvoidance();
 void endFunc();
 void logFunc();
 
@@ -69,8 +71,11 @@ void dataCollection();
 
 // Define Constants used in code **** Needs to be edited
 //BIN SENSOR CONSTANTS
-#define BINFULLDIST 5.0
-#define BINEMPTYDIST 60.0
+#define BINFULLDIST 5
+#define BINEMPTYDIST 60
+#define OBJAVOIDDIST 20
+#define ATDESTRSSI -40
+
 
 //State Constants
 #define ERRORSTATE 0
@@ -123,7 +128,7 @@ char eC_appStatusSend;
 
 //New proposed variables of time
 int si_fsmTime;
-int si_diagTime;
+int si_errorDiagTime;
 int si_serverTime;
 int si_dataTime;
 int si_clockTime;
@@ -160,14 +165,14 @@ int placeholder;
 //Set up threads
 pthread_t thread1, thread2, thread3, thread4;
 
-int iret1FSM, iret2Comms, iret3Diag, iret4Data;
+int iret1FSM, iret2bluetoothServer, iret3errorDiag, iret4Data;
 
 //Initialize global variables for start of FSM, Diagnostics and Communications (maybe read from a log to get last values)
 
 //create independent threads to run each function
 iret1FSM = pthread_create( &thread1, NULL, FSM, NULL);
-iret2Comms = pthread_create( &thread2, NULL, Comms, NULL);
-iret3Diag = pthread_create( &thread3, NULL, Diag, NULL);
+iret2bluetoothServer = pthread_create( &thread2, NULL, bluetoothServer, NULL);
+iret3errorDiag = pthread_create( &thread3, NULL, errorDiag, NULL);
 iret4Data = pthread_create( &thread4, NULL, Data, NULL);
 
 //wait for each thread to finish before completing program
@@ -184,7 +189,6 @@ std::cout << "Program Ended";
 std::cout << "\n";
 
 
-
 }
 
 //*********************** Primary Functions ********************************//
@@ -196,7 +200,7 @@ void *FSM(void *ptr){
 		float time = ( float( clock() ) /CLOCKS_PER_SEC );
 
 		if((float( clock() - begin_time ) /CLOCKS_PER_SEC) > runTime){
-			printf("Diag has exited \n");
+			printf("errorDiag has exited \n");
 			break;
 		}
 
@@ -234,18 +238,18 @@ void *FSM(void *ptr){
 }
 
 
-void *Comms(void *ptr){
-	printf("Comms Thread Running \n");
+void *bluetoothServer(void *ptr){
+	printf("bluetoothServer Thread Running \n");
 	while(1){
 		if((float( clock() - begin_time ) /CLOCKS_PER_SEC) > runTime){
-			printf("Comms has exited \n");
+			printf("bluetoothServer has exited \n");
 			break;
 		}
 	}
 }
 
-void *Diag(void *ptr){
-	printf("Diag Thread Running \n");
+void *errorDiag(void *ptr){
+	printf("errorDiag Thread Running \n");
 	while(1){
 		overheatDiag();
 		batteryLowDiag();
@@ -381,6 +385,60 @@ void errorState(){
 
 }
 
+void travel()
+{
+    while (ei_userCommand == NO_COMMAND && ei_error == 0)
+    {
+        if ((ci_sensorFront <= FTHRESH ) || (ci_sensorLeft <= LRTHRESH) || (ci_sensorRight <= LRTHRESH) || (ed_beaconRssi >= ATDESTRSSI))
+        {
+            pathFinding();
+        }
+        else if (ed_beaconRssi >= ATDESTRSSI)
+        {
+            if (eb_nextDest == 0)
+            {
+                ei_state == COLLECTIONSTATE;
+                break;
+            }
+            if (eb_nextDest == 1)
+            {
+                ei_state = DISPOSALSTATE;
+                break;
+            }
+        }
+        else
+        {
+            obstacleAvoidance();
+        }
+    }
+    if (ei_error != 0)
+    {
+        ei_prevState = TRAVELSTATE;
+        ei_state = ERRORSTATE;
+        return;
+    }
+    if (ei_userCommand != NO_COMMAND)
+    {
+            //switch cases to adjust state based on user command
+        switch(ei_userCommand){
+            case SHUT_DOWN:
+                //do shutdown stuff
+                logFunc();
+                //system("sudo shutdown -h now");
+                break;
+            case STOP:
+                //do stop stuff
+                break;
+            case MOVE_TO_COLLECTIONS:
+                //do move to collections stuff
+                break;
+            case MOVE_TO_DISPOSAL:
+                //do move to disposal stuff
+                break;
+	return; //break out of function after receiving user command
+        }
+    }
+}
 
 
 void collection(){
@@ -466,6 +524,53 @@ void endFunc(){
 	std::cout << float( clock() ) /CLOCKS_PER_SEC; //print out time spent running program
 }
 
+void pathFinding(){
+}
+
+void obstacleAvoidance(){
+    if(numMoves>=ALLOWEDMOVES){
+        if((ci_sensorFront>=FTHRESH) && (ci_sensorRight>=LRTHRESH) && (ci_sensorLeft>=LRTHRESH)){
+            numMoves = 0;
+        }
+        else{
+            numMoves++;
+            adjustAngleNegative();
+            printf("Turning Right\n");
+        }
+    }
+    if(numMoves < ALLOWEDMOVES){
+        if((ci_sensorFront>=FTHRESH) && (ci_sensorRight>=LRTHRESH) && (ci_sensorLeft>=LRTHRESH)){
+            numMoves = 0;
+            moveForward(); 
+            printf("Moving Forward\n");
+        }
+        else if(ci_sensorFront<=FTHRESH){
+            numMoves ++;
+            if(ci_sensorRight < ci_sensorLeft){
+                adjustAnglePositive();
+                printf("Turning Left\n");
+            }
+            else if (ci_sensorLeft < ci_sensorRight) {
+                adjustAngleNegative();
+                printf("Turning Right\n");
+            }
+        }
+        else if(ci_sensorFront>=FTHRESH){
+            numMoves ++;
+            if(ci_sensorRight<=LRTHRESH){
+                adjustAnglePositive();
+                printf("Turning Left\n");
+            }
+            else if (ci_sensorLeft<=LRTHRESH) {
+                adjustAngleNegative();
+                printf("Turning Right\n");
+            }
+        }
+    }
+    printf("Nummoves: \t");
+    printf("%i\n",numMoves);
+}
+
 void logFunc(){
 	//put code here to write variables to a log
 }
@@ -548,49 +653,6 @@ void showIP()
     }
 }
 
-void travel(){
-	if(numMoves>=ALLOWEDMOVES){
-    	if((ci_sensorFront>=FTHRESH) && (ci_sensorRight>=LRTHRESH) && (ci_sensorLeft>=LRTHRESH)){
-      		numMoves = 0;
-    	}
-    	else{
-    		numMoves++;
-      		adjustAngleNegative();
-      		printf("Turning Right\n");
-    	}
-  	}
-  	if(numMoves < ALLOWEDMOVES){
-  		if((ci_sensorFront>=FTHRESH) && (ci_sensorRight>=LRTHRESH) && (ci_sensorLeft>=LRTHRESH)){
-      		numMoves = 0;
-      		moveForward(); 
-      		printf("Moving Forward\n");
-    	}
-    	else if(ci_sensorFront<=FTHRESH){
-      		numMoves ++;
-      		if(ci_sensorRight < ci_sensorLeft){
-        		adjustAnglePositive();
-				printf("Turning Left\n");
-      		}
-      		else if (ci_sensorLeft < ci_sensorRight) {
-         		adjustAngleNegative();
-	 			printf("Turning Right\n");
-      		}
-    	}
-    	else if(ci_sensorFront>=FTHRESH){
-    		numMoves ++;
-      		if(ci_sensorRight<=LRTHRESH){
-        		adjustAnglePositive();
-   				printf("Turning Left\n");
-      		}
-      		else if (ci_sensorLeft<=LRTHRESH) {
-        		adjustAngleNegative();
-	 			printf("Turning Right\n");
-      		}
-    	}
-  	}
-  	printf("Nummoves: \t");
-  	printf("%i\n",numMoves);
-}
 
 void dataCollection(){
 	printf("Data Thread is running\n");
@@ -643,7 +705,7 @@ void dataCollection(){
     	//writeData(10);
     	//delay(I2CDELAY);
     	printHardwareValues();
-    	travel();
+    	obstacleAvoidance();
     	//if((float( clock() - begin_time ) /CLOCKS_PER_SEC) > runTime){
 		//	printf("Data has exited \n");
 		//	break;

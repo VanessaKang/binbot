@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1517088357 source:/home/vkangster/Documents/gitlab/binbot/binbotmaintest/main.cpp
+1516911007 source:/home/vkangster/Documents/gitlab/binbot/binbotmain/main.cpp
 	<stdio.h>
 	<iostream>
 	<fcntl.h>
@@ -8,6 +8,7 @@
 	<pthread.h>
 	<time.h>
 	<math.h>
+	<wiringPi.h>
 	<fcntl.h>
 	<sys/ioctl.h>
 	<linux/i2c-dev.h>

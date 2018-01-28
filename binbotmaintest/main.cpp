@@ -24,6 +24,8 @@ void errorState();
 void travel();
 void collection();
 void disposal();
+void pathFinding();
+void obstacleAvoidance();
 void endFunc();
 void logFunc();
 
@@ -69,8 +71,10 @@ void printHardwareValues();
 
 // Define Constants used in code **** Needs to be edited
 //BIN SENSOR CONSTANTS
-#define BINFULLDIST 5.0
-#define BINEMPTYDIST 60.0
+#define BINFULLDIST 5
+#define BINEMPTYDIST 60
+#define OBJAVOIDDIST 20
+#define ATDESTRSSI -40
 
 //State Constants
 #define ERRORSTATE 0
@@ -104,20 +108,24 @@ bool eb_destReached = 0;
 bool eb_nextDest = 0;
 int ei_prevState;
 double md_botLocation;
-double td_temp;
+int ti_temp;
 double cmd_objDist;
 double ed_appRssi;
 double ed_beaconRssi;
-double cd_sensorLeft;
-double cd_sensorFront;
-double cd_sensorRight;
-double cd_sensorFill;
-double cd_sensorVertical;
+int ci_sensorLeft;
+int ci_sensorFront;
+int ci_sensorRight;
+int ci_sensorFill;
+int ci_sensorVertical;
 
 // New proposed variables from Component document
 int ei_userCommand;
 char eC_appCmdRecv;
 char eC_appStatusSend;
+
+int angleMove = 0;
+int movePos = 0;
+int moveNeg = 0;
 
 
 //New proposed variables of time
@@ -190,33 +198,33 @@ void *FSM(void *ptr){
 		}
 
 		switch (ei_state){
-			case 0:
+			case ERRORSTATE:
 			if ( fmod(time,1) == 0){
 				printf("Error State = %i \n ", ei_state);
 				//std::cout << float( clock() ) /CLOCKS_PER_SEC;
 				//Check for an error here and take remedial actions?, Diagnostics are run by another
 				//thread so we just need to check the global variable indicating errors (ei_error?)
-
-				ei_prevState = 0;
+                errorState();
+				ei_prevState = ERRORSTATE;
 			}
 			break;
-			case 1: //Travel State
+			case TRAVELSTATE: //Travel State
 				printf("Travel State = %i \n", ei_state);
 				//Run Travel Code here
-
-				ei_prevState = 1;
+                travel();
+				ei_prevState = TRAVELSTATE;
 			break;
-			case 2: //Collection State
+			case COLLECTIONSTATE: //Collection State
 				printf("Collection State = %i \n", ei_state);
 				//Run Collection Code here
-
-				ei_prevState = 2;
+                collection();
+				ei_prevState = COLLECTIONSTATE;
 			break;
-			case 3: // Disposal State
+			case DISPOSALSTATE: // Disposal State
 				printf("Disposal State = %i \n", ei_state);
 				//Run Disposal Code here
-
-				ei_prevState = 3;
+                disposal();
+				ei_prevState = DISPOSALSTATE;
 			break;
 		}
 	}
@@ -272,28 +280,28 @@ void *Data(void *ptr){
 
     	writeData(1);
     	delay(100);
-    	cd_sensorFront = readData();
+    	ci_sensorFront = readData();
 
     	writeData(2);
     	delay(100);
-    	cd_sensorRight = readData();
+    	ci_sensorRight = readData();
 
     	writeData(3);
     	delay(100);
-    	cd_sensorLeft = readData();
+    	ci_sensorLeft = readData();
 
     	writeData(4);
     	delay(100);
-    	cd_sensorFill = readData();
+    	ci_sensorFill = readData();
 
     	writeData(5);
     	delay(100);
-    	cd_sensorVertical = readData();
+    	ci_sensorVertical = readData();
 
 
     	writeData(6);
     	delay(100);
-    	td_temp = readData();
+    	ti_temp = readData();
 
     	//Turn LED Off
     	writeData(10);
@@ -420,25 +428,106 @@ void adjustAngleNegative(){
 	leftMotorForward();
 }*/
 
-void errorState(){
+void errorState()
+{
 
 }
 
-void travel(){
+void travel()
+{
+    while (ei_userCommand == NO_COMMAND && ei_error == 0)
+    {
+        if ((ci_sensorFront <= OBJAVOIDDIST) || (ci_sensorLeft <= OBJAVOIDDIST) || (ci_sensorRight <= OBJAVOIDDIST) || (ed_beaconRssi >= ATDESTRSSI))
+        {
+            pathFinding();
+        }
+        else if (ed_beaconRssi >= ATDESTRSSI)
+        {
+            if (eb_nextDest == 0)
+            {
+                ei_state == COLLECTIONSTATE;
+                break;
+            }
+            if (eb_nextDest == 1)
+            {
+                ei_state = DISPOSALSTATE;
+                break;
+            }
+        }
+        else
+        {
+            obstacleAvoidance();
+        }
+    }
+    if (ei_error != 0)
+    {
+        ei_prevState = TRAVELSTATE;
+        ei_state = ERRORSTATE;
+        return;
+    }
+    else if (ei_userCommand != NO_COMMAND)
+    {
+            //switch cases to adjust state based on user command
+        switch(ei_userCommand){
+            case SHUT_DOWN:
+                //do shutdown stuff
+                logFunc();
+                //system("sudo shutdown -h now");
+                break;
+            case STOP:
+                //OPTION 1: =============================================
+                //while there is no error and userCommand is still stop
+                while ((ei_error == 0) && (ei_userCommand != STOP))
+                {
+                    //allStop();
+                }
 
+                break;
+                //=======================================================
+
+                //Second option==========================================
+                //It will stop
+                    //allStop();
+                //Exit the function and make it come back to travel state
+                //makes sure it checks to see if user_command is still stop
+                    //ei_state = TRAVELSTATE;
+                    //break;
+                //========================================================
+
+                break;
+            case MOVE_TO_COLLECTIONS:
+                //do move to collections stuff
+                eb_nextDest = 0;
+                ei_state = TRAVELSTATE;
+                ei_userCommand = NO_COMMAND;
+                //ei_prevState = TRAVELSTATE;
+                break;
+            case MOVE_TO_DISPOSAL:
+                //do move to disposal stuff
+                eb_nextDest = 1;
+                ei_state = TRAVELSTATE;
+                ei_userCommand = NO_COMMAND;
+                //ei_prevState = TRAVELSTATE;
+                break;
+	return; //break out of function after receiving user command
+        }
+    }
 }
 
 void collection(){
-    while ((cd_sensorFill >= BINEMPTYDIST) && (ei_userCommand == NO_COMMAND)){
-        // Making it a super super
-        if (ei_error != 0)
-        {
-            ei_prevState = ei_state;
-            ei_state = ERRORSTATE;
-            break;
-        }
+    while ((ci_sensorFill >= BINEMPTYDIST) && (ei_userCommand == NO_COMMAND) && (ei_error == 0)){
+        // Stay and wait for garbage to be full
+        // do nothing for a set delay
     }
-    if(ei_userCommand != NO_COMMAND){
+
+    if (ei_error != 0)
+    {
+        ei_prevState = ei_state;
+        ei_state = ERRORSTATE;
+        return;
+    }
+    else if(ei_userCommand != NO_COMMAND)
+    {
         //switch cases to adjust state based on user command
         switch(ei_userCommand){
             case SHUT_DOWN:
@@ -447,15 +536,40 @@ void collection(){
                 //system("sudo shutdown -h now");
                 break;
             case STOP:
-                //do stop stuff
+                //OPTION 1: =============================================
+                //while there is no error and userCommand is still stop
+                while ((ei_error == 0) && (ei_userCommand != STOP))
+                {
+                    //allStop();
+                }
+
+                break;
+                //=======================================================
+
+                //Second option==========================================
+                //It will stop
+                    //allStop();
+                //Exit the function and make it come back to travel state
+                //makes sure it checks to see if user_command is still stop
+                    //ei_state = COLLECTIONSTATE;
+                    //break;
+                //========================================================
+
                 break;
             case MOVE_TO_COLLECTIONS:
                 //do move to collections stuff
+                //Collection is already in collection
+                ei_userCommand = NO_COMMAND;
+                //ei_prevState = TRAVELSTATE;
                 break;
             case MOVE_TO_DISPOSAL:
                 //do move to disposal stuff
+                eb_nextDest = 1;
+                ei_state = TRAVELSTATE;
+                ei_userCommand = NO_COMMAND;
+                ei_prevState = COLLECTIONSTATE;
                 break;
-	return; //break out of function after receiving user command
+        return; //break out of function after receiving user command
         }
     }
     else
@@ -468,17 +582,20 @@ void collection(){
 }
 
 void disposal(){
-	while( (cd_sensorFill < BINFULLDIST) && (ei_userCommand == NO_COMMAND) ){
+	while( (ci_sensorFill < BINFULLDIST) && (ei_userCommand == NO_COMMAND) && (ei_error == 0)){
 		//Stay still, wait for garbage to be disposed
-		//send message to app, error state will bring back to disposal state
-		if(ei_error != 0){
-			ei_prevState = ei_state;
-			ei_state = ERRORSTATE; //set state to 0 for error state due to error
-            break;
-		}
+
 	}
 
-	if(ei_userCommand != NO_COMMAND){
+			//send message to app, error state will bring back to disposal state
+    if(ei_error != 0)
+    {
+			ei_prevState = ei_state;
+			ei_state = ERRORSTATE; //set state to 0 for error state due to error
+            return;
+    }
+
+	else if(ei_userCommand != NO_COMMAND){
 		//switch cases to adjust state based on user command
 		switch(ei_userCommand){
 			case SHUT_DOWN:
@@ -487,13 +604,37 @@ void disposal(){
 				//system("sudo shutdown -h now");
 				break;
 			case STOP:
-				//do stop stuff
-				break;
+
+                //OPTION 1: =============================================
+                //while there is no error and userCommand is still stop
+                while ((ei_error == 0) && (ei_userCommand != STOP))
+                {
+                    //allStop();
+                }
+
+                break;
+                //=======================================================
+
+                //Second option==========================================
+                //It will stop
+                    //allStop();
+                //Exit the function and make it come back to travel state
+                //makes sure it checks to see if user_command is still stop
+                    //ei_state = DISPOSAL;
+                    //break;
+                //========================================================
 			case MOVE_TO_COLLECTIONS:
 				//do move to collections stuff
+                eb_nextDest = 0;
+                ei_state = TRAVELSTATE;
+                ei_userCommand = NO_COMMAND;
+                ei_prevState = DISPOSALSTATE;
 				break;
 			case MOVE_TO_DISPOSAL:
 				//do move to disposal stuff
+				//Already in Disposal
+                ei_userCommand = NO_COMMAND;
+                //ei_prevState = TRAVELSTATE;
 				break;
 		return; //break out of function after receiving user command
 		}
@@ -506,6 +647,62 @@ void disposal(){
 	}
 }
 
+void pathFinding(){
+        //make sure prev
+		//Checks if there is an error and goes into error state
+		if(ei_error != 0){
+			ei_prevState = ei_state;
+			ei_state = ERRORSTATE; //set state to 0 for error state due to error
+            return;
+		}
+
+		//Move forwards in a meaningful way for 1 second
+		ed_appRssi = ed_beaconRssi;
+		//moveForward();
+		//delay(1000)
+
+		//If previous signal indicates were getting closer
+		if (ed_appRssi < ed_beaconRssi)
+		{
+            // Keep in mind we're moving forward twice
+            //moveForward();
+            //we can change delay here from the other
+            //delay(1000);
+		}
+		else if ((angleMove <90) && (movePos < 9))
+		{
+            //adjustAnglePositive();
+            //We have to see if this will make it move 10 degrees
+            //delay(500);
+            angleMove+= 10;
+            movePos += 1;
+		}
+        else if ((angleMove < -90) && (moveNeg < 18))
+		{
+            //adjustAngleNegative();
+            //We have to see if this will make it move 10 degrees
+            //delay(500);
+            angleMove-= 10;
+            moveNeg += 1;
+
+		}
+		else{
+            // GO 180 depending on where it is.
+            //adjustAngleNegative(); adjustAnglePositive()
+            //delay(2000);
+
+            angleMove = 0;
+            moveNeg = 0;
+            movePos = 0;
+		}
+    //Goes out to check other sensor values if we need obstacle or if there is an error
+    return;
+
+}
+
+void obstacleAvoidance(){
+}
+
 void endFunc(){
 	printf("FSM has exited \n");
 	std::cout << float( clock() ) /CLOCKS_PER_SEC; //print out time spent running program
@@ -515,9 +712,6 @@ void logFunc(){
 	//put code here to write variables to a log
 }
 
-void binLevelDetect(){
-	//detects fullness of bin from waste
-}
 
 //********************* Sensor/Actuator Functions *****************************//
 
@@ -526,7 +720,7 @@ void binLevelDetect(){
 void overheatDiag(){
     //LAN9512 has operating range of 0 celsius to 70 celsius
     // 750mV at 25 celsius and 10mV/(degree celsius)
-	if (td_temp<= 500 or td_temp >= 1200)
+	if (ti_temp<= 500 or ti_temp >= 1200)
 	{
 	    ei_error = 1;
 	    return;
@@ -595,16 +789,16 @@ void showIP()
 
 void printHardwareValues(){
 	printf("Front sensor value: ");
-    printf("%lf\n",cd_sensorFront);
+    printf("%i\n",ci_sensorFront);
     printf("Right sensor value: ");
-    printf("%lf\n",cd_sensorRight);
+    printf("%i\n",ci_sensorRight);
     printf("Left sensor value: ");
-    printf("%lf\n",cd_sensorLeft);
+    printf("%i\n",ci_sensorLeft);
     printf("Fill sensor value: ");
-    printf("%lf\n",cd_sensorFill);
+    printf("%i\n",ci_sensorFill);
     printf("Vertical sensor value: ");
-    printf("%lf\n",cd_sensorVertical);
+    printf("%i\n",ci_sensorVertical);
     printf("Temperature value: ");
-    printf("%lf\n",td_temp);
+    printf("%i\n",ti_temp);
     printf("\n");
 }
