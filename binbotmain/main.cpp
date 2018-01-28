@@ -14,6 +14,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <ifaddrs.h>
+#include <chrono>
 //declare primary functions
 //hello
 void *FSM(void* ptr);
@@ -74,8 +75,10 @@ double timeFromStart(auto y);
 // Define Constants used in code **** Needs to be edited
 //BIN SENSOR CONSTANTS
 #define BINFULLDIST 5
-#define BINEMPTYDIST 60
-#define OBJAVOIDDIST 20
+#define BINEMPTYDIST 30
+#define FTHRESH 40
+#define LRTHRESH 25
+#define ALLOWEDMOVES 10
 #define ATDESTRSSI -40
 
 
@@ -101,21 +104,21 @@ unsigned char ultraVal;
 
 
 //declare global variables------------------------------------------------------------
-int ei_state = 0;
+int ei_state=1;
 double ed_fillLevel;
 double vd_battVoltage;
-int ei_error = 0;
+int ei_error=0;
 //These variables cannot be defined as string, and i am not quite sure how we are using it
 //string es_statusString;
 //string es_commandString;
-bool eb_destReached = 0;
-bool eb_nextDest = 0;
+bool eb_destReached;
+bool eb_nextDest;
 int ei_prevState;
 double md_botLocation;
 int ti_temp;
 double cmd_objDist;
 double ed_appRssi;
-double ed_beaconRssi;
+double ed_beaconRssi = -70;
 int ci_sensorLeft;
 int ci_sensorFront;
 int ci_sensorRight;
@@ -139,15 +142,12 @@ int si_clockTime;
 char host[NI_MAXHOST];
 
 
-//Constants for Collision Avoidance
-#define FTHRESH 40
-#define LRTHRESH 25
-#define ALLOWEDMOVES 10
 //Variables for Collison Avoidance
 int numMoves;
+int obstacleCount=1;
 
 //Declare time variable for timing purposes
-double runTime = 15000.0; //run time in milliseconds
+double runTime = 45000.0; //run time in milliseconds
 auto start = std::chrono::system_clock::now();
 
 
@@ -158,6 +158,7 @@ int main(){
 setupPins();
 setupi2c();
 showIP();
+
 
 //declare local variables
 int placeholder;
@@ -176,6 +177,7 @@ iret2bluetoothServer = pthread_create( &thread2, NULL, bluetoothServer, NULL);
 iret3errorDiag = pthread_create( &thread3, NULL, errorDiag, NULL);
 iret4Data = pthread_create( &thread4, NULL, Data, NULL);
 
+
 //wait for each thread to finish before completing program
 pthread_join( thread1, NULL);
 pthread_join( thread2, NULL);
@@ -184,7 +186,7 @@ pthread_join( thread4, NULL);
 
 //print to console to confirm program has finished
 allStop();
-
+writeData(10);
 std::cout << "\n";
 std::cout << "Program Ended";
 std::cout << "\n";
@@ -196,85 +198,89 @@ std::cout << "\n";
 
 
 void *FSM(void *ptr){
-	printf("FSM Thread Running \n");
-	while(1){	//Run Various states until commanded to break
+    delay(1000);
+    printf("FSM Thread Running \n");
+    while(1){   //Run Various states until commanded to break
 
-		if(timeFromStart(start) > runTime ){
-			printf("errorDiag has exited \n");
-			break;
-		}
+        if(timeFromStart(start) > runTime ){
+            printf("errorDiag has exited \n");
+            break;
+        }
 
-		switch (ei_state){
-			case 0:
-			if ( fmod(time,1) == 0){
-				printf("Error State = %i \n ", ei_state);
-				//std::cout << float( clock() ) /CLOCKS_PER_SEC;
-				//Check for an error here and take remedial actions?, Diagnostics are run by another
-				//thread so we just need to check the global variable indicating errors (ei_error?)
-
-				ei_prevState = 0;
-			}
-			break;
-			case 1: //Travel State
-				printf("Travel State = %i \n", ei_state);
-				//Run Travel Code here
-
-				ei_prevState = 1;
-			break;
-			case 2: //Collection State
-				printf("Collection State = %i \n", ei_state);
-				//Run Collection Code here
-
-				ei_prevState = 2;
-			break;
-			case 3: // Disposal State
-				printf("Disposal State = %i \n", ei_state);
-				//Run Disposal Code here
-
-				ei_prevState = 3;
-			break;
-		}
-	}
+        switch (ei_state){
+            case 0:
+                if (ei_prevState != 0){
+                    printf("Error State = %i \n ", ei_state);
+                //std::cout << float( clock() ) /CLOCKS_PER_SEC;
+                //Check for an error here and take remedial actions?, Diagnostics are run by another
+                //thread so we just need to check the global variable indicating errors (ei_error?)
+                }
+                errorState();
+                ei_prevState = 0;
+            break;
+            case 1: //Travel State
+                if(ei_prevState != 1){
+                    printf("Travel State = %i \n", ei_state);
+                }
+                travel();
+                ei_prevState = 1;
+            break;
+            case 2: //Collection State
+                if(ei_prevState != 2){
+                    printf("Collection State = %i \n", ei_state);
+                }
+                collection();
+                ei_prevState = 2;
+            break;
+            case 3: // Disposal State
+                if(ei_prevState){
+                    printf("Disposal State = %i \n", ei_state);                    
+                }
+                disposal();
+                ei_prevState = 3;
+            break;
+        }
+    }
 }
 
 
 void *bluetoothServer(void *ptr){
-	printf("bluetoothServer Thread Running \n");
-	while(1){
-		if(timeFromStart(start) > runTime){
-			printf("bluetoothServer has exited \n");
-			break;
-		}
-	}
+    printf("bluetoothServer Thread Running \n");
+    while(1){
+        if(timeFromStart(start) > runTime){
+            printf("bluetoothServer has exited \n");
+            break;
+        }
+    }
 }
 
 void *errorDiag(void *ptr){
-	printf("errorDiag Thread Running \n");
-	while(1){
-		overheatDiag();
-		batteryLowDiag();
-		fallOverDiag();
-		immobileDiag();
-		noBinDiag();
-		ultraSensDiag();
-		motorDiag();
-		connectionDiag();
-		if(timeFromStart(start) > runTime){
-			printf("Diag has exited \n");
-			break;
-		}
-	}
-	//std::cout << "Please enter the Value of es_commandString: ";
-	//std::cin >> es_commandString;
+    printf("errorDiag Thread Running \n");
+    while(1){
+        overheatDiag();
+        batteryLowDiag();
+        fallOverDiag();
+        immobileDiag();
+        noBinDiag();
+        ultraSensDiag();
+        motorDiag();
+        connectionDiag();
+        if(timeFromStart(start) > runTime){
+            printf("Diag has exited \n");
+            break;
+        }
+    }
+    //std::cout << "Please enter the Value of es_commandString: ";
+    //std::cin >> es_commandString;
 
-	//Here we need to check all of our diagnostics and make changes to pertinant
-	//diagnostic variables so the Comm/FSM functions can make the correct decisions to
-	//deal with the error
+    //Here we need to check all of our diagnostics and make changes to pertinant
+    //diagnostic variables so the Comm/FSM functions can make the correct decisions to
+    //deal with the error
 
 }
 
 void *Data(void *ptr){
-	dataCollection();
+    dataCollection();
 }
 
 //*********************** Supporting Functions ********************************//
@@ -294,104 +300,121 @@ void setupPins(){
 }
 
 void setupi2c(){
-	//----- OPEN THE I2C BUS -----
-	char *filename = (char*)"/dev/i2c-1";
-	if ((file_i2c = open(filename, O_RDWR)) < 0)
-	{
-		//ERROR HANDLING: you can check errno to see what went wrong
-		printf("Failed to open the i2c bus\n");
-		return;
-	}
+    //----- OPEN THE I2C BUS -----
+    char *filename = (char*)"/dev/i2c-1";
+    if ((file_i2c = open(filename, O_RDWR)) < 0)
+    {
+        //ERROR HANDLING: you can check errno to see what went wrong
+        printf("Failed to open the i2c bus\n");
+        return;
+    }
 
-	int addr = 0x04;          //<<<<<The I2C address of the slave
-	if (ioctl(file_i2c, I2C_SLAVE, addr) < 0)
-	{
-		printf("Failed to acquire bus access and/or talk to slave.\n");
-		//ERROR HANDLING; you can check errno to see what went wrong
-		return;
-	}
+    int addr = 0x04;          //<<<<<The I2C address of the slave
+    if (ioctl(file_i2c, I2C_SLAVE, addr) < 0)
+    {
+        printf("Failed to acquire bus access and/or talk to slave.\n");
+        //ERROR HANDLING; you can check errno to see what went wrong
+        return;
+    }
 }
 
 unsigned char readData(){
-	length = 1;
-	if (read(file_i2c, buffer, length) != length){
-		//ERROR HANDLING: i2c transaction failed
-		//printf("Failed to read from the i2c bus.\n");
-	}
-	unsigned char val = buffer[0];
-	return val;
+    length = 1;
+    if (read(file_i2c, buffer, length) != length){
+        //ERROR HANDLING: i2c transaction failed
+        //printf("Failed to read from the i2c bus.\n");
+    }
+    unsigned char val = buffer[0];
+    return val;
 }
 
 void writeData(int val){
-	buffer[0] = val;
-	length = 1;
-	if (write(file_i2c, buffer, length) != length){
-		/* ERROR HANDLING: i2c transaction failed */
-		//printf("Failed to write to the i2c bus.\n");
-	}
+    buffer[0] = val;
+    length = 1;
+    if (write(file_i2c, buffer, length) != length){
+        /* ERROR HANDLING: i2c transaction failed */
+        //printf("Failed to write to the i2c bus.\n");
+    }
 }
 
 void rightMotorForward(){
-	writeData(11);
-	//delay(I2CDELAY);
+    //writeData(11);
+    //delay(I2CDELAY);
+    digitalWrite(PIN_RMFWD,HIGH);
+    digitalWrite(PIN_RMRVS,LOW);
 }
 
 void rightMotorReverse(){
-	writeData(12);
-	//delay(I2CDELAY);
+    //writeData(12);
+    //delay(I2CDELAY);
+    digitalWrite(PIN_RMRVS,HIGH);
+    digitalWrite(PIN_RMFWD,LOW);
 }
 
 void leftMotorForward(){
-	writeData(14);
-	//delay(I2CDELAY);
+    //writeData(14);
+    //delay(I2CDELAY);
+    digitalWrite(PIN_LMFWD,HIGH);
+    digitalWrite(PIN_LMRVS,LOW);
 }
 
 void leftMotorReverse(){
-	writeData(15);
-	//delay(I2CDELAY);
+    //writeData(15);
+    //delay(I2CDELAY);
+    digitalWrite(PIN_LMRVS,HIGH);
+    digitalWrite(PIN_LMFWD,LOW);
 }
 
 void rightMotorStop(){
-	writeData(13);
-	//delay(I2CDELAY);
+    //writeData(13);
+    //delay(I2CDELAY);
+    digitalWrite(PIN_RMRVS,LOW);
+    digitalWrite(PIN_RMFWD,LOW);
 }
 
 void leftMotorStop(){
-	writeData(16);
-	//delay(I2CDELAY);
+    //writeData(16);
+    //delay(I2CDELAY);
+    digitalWrite(PIN_LMFWD,LOW);
+    digitalWrite(PIN_LMRVS,LOW);
 }
 
 void moveForward(){
-	rightMotorForward();
-	leftMotorForward();
+    rightMotorForward();
+    leftMotorForward();
 }
 
 void allStop(){
-	rightMotorStop();
-	leftMotorStop();
+    rightMotorStop();
+    leftMotorStop();
 }
 
 void adjustAnglePositive(){
-	rightMotorForward();
-	leftMotorReverse();
+    rightMotorForward();
+    leftMotorReverse();
 }
 
 void adjustAngleNegative(){
-	rightMotorReverse();
-	leftMotorForward();
+    rightMotorReverse();
+    leftMotorForward();
 }
 
 void errorState(){
-
+    printf("Error State\n");
 }
 
-void travel()
-{
+void travel(){
     while (ei_userCommand == NO_COMMAND && ei_error == 0)
     {
-        if ((ci_sensorFront <= FTHRESH ) || (ci_sensorLeft <= LRTHRESH) || (ci_sensorRight <= LRTHRESH) || (ed_beaconRssi >= ATDESTRSSI))
+
+        if ((ci_sensorFront <= FTHRESH ) || (ci_sensorLeft <= LRTHRESH) || (ci_sensorRight <= LRTHRESH))
         {
-            pathFinding();
+            if(obstacleCount==0){
+                printf("Obstacle Avoidance\n");
+                printHardwareValues();
+            }
+            obstacleCount = 1;
+            obstacleAvoidance();
         }
         else if (ed_beaconRssi >= ATDESTRSSI)
         {
@@ -408,7 +431,11 @@ void travel()
         }
         else
         {
-            obstacleAvoidance();
+            if(obstacleCount==1){
+                printf("Path Finding\n");
+            }
+            obstacleCount = 0;
+            pathFinding();
         }
     }
     if (ei_error != 0)
@@ -435,7 +462,7 @@ void travel()
             case MOVE_TO_DISPOSAL:
                 //do move to disposal stuff
                 break;
-	return; //break out of function after receiving user command
+    return; //break out of function after receiving user command
         }
     }
 }
@@ -468,7 +495,7 @@ void collection(){
             case MOVE_TO_DISPOSAL:
                 //do move to disposal stuff
                 break;
-	return; //break out of function after receiving user command
+    return; //break out of function after receiving user command
         }
     }
     else
@@ -476,52 +503,52 @@ void collection(){
         ei_prevState = ei_state;
         eb_nextDest = 1; //next destination is disposal
         ei_state = TRAVELSTATE;
-	return;
+    return;
     }
 }
 
 void disposal(){
-	while( (ci_sensorFill < BINFULLDIST) && (ei_userCommand == NO_COMMAND) ){
-		//Stay still, wait for garbage to be disposed
-		//send message to app, error state will bring back to disposal state
-		if(ei_error != 0){
-			ei_prevState = ei_state;
-			ei_state = ERRORSTATE; //set state to 0 for error state due to error
+    while( (ci_sensorFill < BINFULLDIST) && (ei_userCommand == NO_COMMAND) ){
+        //Stay still, wait for garbage to be disposed
+        //send message to app, error state will bring back to disposal state
+        if(ei_error != 0){
+            ei_prevState = ei_state;
+            ei_state = ERRORSTATE; //set state to 0 for error state due to error
             break;
-		}
-	}
+        }
+    }
 
-	if(ei_userCommand != NO_COMMAND){
-		//switch cases to adjust state based on user command
-		switch(ei_userCommand){
-			case SHUT_DOWN:
-				//do shutdown stuff
-				logFunc();
-				system("sudo shutdown -h now");
-				break;
-			case STOP:
-				//do stop stuff
-				break;
-			case MOVE_TO_COLLECTIONS:
-				//do move to collections stuff
-				break;
-			case MOVE_TO_DISPOSAL:
-				//do move to disposal stuff
-				break;
-		return; //break out of function after receiving user command
-		}
-	}
-	else{
+    if(ei_userCommand != NO_COMMAND){
+        //switch cases to adjust state based on user command
+        switch(ei_userCommand){
+            case SHUT_DOWN:
+                //do shutdown stuff
+                logFunc();
+                system("sudo shutdown -h now");
+                break;
+            case STOP:
+                //do stop stuff
+                break;
+            case MOVE_TO_COLLECTIONS:
+                //do move to collections stuff
+                break;
+            case MOVE_TO_DISPOSAL:
+                //do move to disposal stuff
+                break;
+        return; //break out of function after receiving user command
+        }
+    }
+    else{
         ei_prevState = ei_state;
-		ei_state = TRAVELSTATE; //travel mode
-		eb_nextDest = 0; //next destination is collection zone
-		return;
-	}
+        ei_state = TRAVELSTATE; //travel mode
+        eb_nextDest = 0; //next destination is collection zone
+        return;
+    }
 }
 
 void endFunc(){
-	printf("FSM has exited \n");
-	std::cout << timeFromStart(start); //print out time spent running program
+    printf("FSM has exited \n");
+    std::cout << timeFromStart(start); //print out time spent running program
 }
 
 void pathFinding(){
@@ -535,48 +562,48 @@ void obstacleAvoidance(){
         else{
             numMoves++;
             adjustAngleNegative();
-            printf("Turning Right\n");
+            //printf("Turning Right\n");
         }
     }
     if(numMoves < ALLOWEDMOVES){
         if((ci_sensorFront>=FTHRESH) && (ci_sensorRight>=LRTHRESH) && (ci_sensorLeft>=LRTHRESH)){
             numMoves = 0;
             moveForward(); 
-            printf("Moving Forward\n");
+            //printf("Moving Forward\n");
         }
         else if(ci_sensorFront<=FTHRESH){
             numMoves ++;
             if(ci_sensorRight < ci_sensorLeft){
                 adjustAnglePositive();
-                printf("Turning Left\n");
+                //printf("Turning Left\n");
             }
             else if (ci_sensorLeft < ci_sensorRight) {
                 adjustAngleNegative();
-                printf("Turning Right\n");
+                //printf("Turning Right\n");
             }
         }
         else if(ci_sensorFront>=FTHRESH){
             numMoves ++;
             if(ci_sensorRight<=LRTHRESH){
                 adjustAnglePositive();
-                printf("Turning Left\n");
+                //printf("Turning Left\n");
             }
             else if (ci_sensorLeft<=LRTHRESH) {
                 adjustAngleNegative();
-                printf("Turning Right\n");
+                //printf("Turning Right\n");
             }
         }
     }
-    printf("Nummoves: \t");
-    printf("%i\n",numMoves);
+    //printf("Nummoves: \t");
+    //printf("%i\n",numMoves);
 }
 
 void logFunc(){
-	//put code here to write variables to a log
+    //put code here to write variables to a log
 }
 
 void binLevelDetect(){
-	//detects fullness of bin from waste
+    //detects fullness of bin from waste
 }
 
 //********************* Sensor/Actuator Functions *****************************//
@@ -586,14 +613,15 @@ void binLevelDetect(){
 void overheatDiag(){
     //LAN9512 has operating range of 0 celsius to 70 celsius
     // 750mV at 25 celsius and 10mV/(degree celsius)
-	if (ti_temp<= 500 or ti_temp >= 1200)
-	{
-	    ei_error = 1;
-	    return;
-	}
+    if (ti_temp >= 35)
+    {
+        printf("Overheated\n");
+        ei_error = 1;
+        return;
+    }
 
-	ei_error = 0;
-	return;
+    ei_error = 0;
+    return;
 
 }
 void batteryLowDiag(){
@@ -617,12 +645,9 @@ void motorDiag(){
 void connectionDiag(){
 
 }
-
-
 //Miscellaneous functions, can be moved wherever
 
-void showIP()
-{
+void showIP(){
     struct ifaddrs *ifaddr, *ifa;
     int s;
 
@@ -653,64 +678,63 @@ void showIP()
     }
 }
 
-
 void dataCollection(){
-	printf("Data Thread is running\n");
- 	while(1){
- 	//Turn LED ON
-    	//writeData(9);
-    	//delay(I2CDELAY);
- 		delay(I2CDELAY);
+    printf("Data Thread is running\n");
+    while(1){
+    //Turn LED ON
+        writeData(9);
+        //delay(I2CDELAY);
+        delay(I2CDELAY);
 
-    	writeData(1);
-    	delay(I2CDELAY);
-    	ci_sensorFront = readData();
-    	if(ci_sensorFront==0 or ci_sensorFront>255){
-    		ci_sensorFront = 255;
-    	}
+        writeData(1);
+        delay(I2CDELAY);
+        ci_sensorFront = readData();
+        if(ci_sensorFront==0 or ci_sensorFront>255){
+            ci_sensorFront = 255;
+        }
 
-    	writeData(2);
-    	delay(I2CDELAY);
-    	ci_sensorRight = readData();
-    	if(ci_sensorRight==0 or ci_sensorRight>255){
-    		ci_sensorRight = 255;
-    	} 
+        writeData(2);
+        delay(I2CDELAY);
+        ci_sensorRight = readData();
+        if(ci_sensorRight==0 or ci_sensorRight>255){
+            ci_sensorRight = 255;
+        } 
 
-    	writeData(3);
-    	delay(I2CDELAY);
-    	ci_sensorLeft = readData();
-    	if(ci_sensorLeft==0 or ci_sensorLeft>255){
-    		ci_sensorLeft = 255;
-    	} 
+        writeData(3);
+        delay(I2CDELAY);
+        ci_sensorLeft = readData();
+        if(ci_sensorLeft==0 or ci_sensorLeft>255){
+            ci_sensorLeft = 255;
+        } 
 
-    	// writeData(4);
-    	// delay(I2CDELAY);
-    	// ci_sensorFill = readData();
-    	// if(ci_sensorFill==0 or ci_sensorFill>255){
-    	// 	ci_sensorFill = 255;
-    	// } 
+        writeData(4);
+        delay(I2CDELAY);
+        ci_sensorFill = readData();
+        if(ci_sensorFill==0 or ci_sensorFill>255){
+            ci_sensorFill = 255;
+        } 
 
-    	// writeData(5);
-    	// delay(I2CDELAY);
-    	// ci_sensorVertical = readData();
-    	// if(ci_sensorVertical==0 or ci_sensorVertical>255){
-    	// 	ci_sensorVertical = 255;
-    	// } 
+        // writeData(5);
+        // delay(I2CDELAY);
+        // ci_sensorVertical = readData();
+        // if(ci_sensorVertical==0 or ci_sensorVertical>255){
+        //  ci_sensorVertical = 255;
+        // } 
 
-    	writeData(6);
-    	delay(I2CDELAY);
-    	ti_temp = readData();
+        writeData(6);
+        delay(I2CDELAY);
+        ti_temp = readData();
 
-    	//Turn LED Off
-    	//writeData(10);
-    	//delay(I2CDELAY);
-    	printHardwareValues();
-    	obstacleAvoidance();
-    	//if(timeFromStart(start) > runTime){
-		//	printf("Data has exited \n");
-		//	break;
-		//}
-  	}
+        //Turn LED Off
+        writeData(10);
+        delay(I2CDELAY);
+        //printHardwareValues();
+        //obstacleAvoidance();
+        if(timeFromStart(start) > runTime){
+            printf("Data has exited \n");
+            break;
+        }
+    }
 }
 
 void printHardwareValues(){
@@ -720,8 +744,8 @@ void printHardwareValues(){
     printf("%i\n",ci_sensorRight);
     printf("Left sensor value: ");
     printf("%i\n",ci_sensorLeft);
-    //printf("Fill sensor value: ");
-    //printf("%i\n",ci_sensorFill);
+    printf("Fill sensor value: ");
+    printf("%i\n",ci_sensorFill);
     //printf("Vertical sensor value: ");
     //printf("%i\n",ci_sensorVertical);
     printf("Temperature value: ");
