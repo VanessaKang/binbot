@@ -61,6 +61,8 @@ void connectionDiag();
 void showIP();
 void printHardwareValues();
 void dataCollection();
+double timeFromStart(auto y);
+
 //DIGITAL IO Pi GPIO pins
 #define PIN_TEMP 5
 #define PIN_RMFWD 20
@@ -136,7 +138,6 @@ int si_clockTime;
 //Host name IP
 char host[NI_MAXHOST];
 
-int runTime = 100;
 
 //Constants for Collision Avoidance
 #define FTHRESH 40
@@ -146,9 +147,9 @@ int runTime = 100;
 int numMoves;
 
 //Declare time variable for timing purposes
-time_t clock_time;
-const clock_t begin_time = clock(); //used to calculate total running time
-// (float( clock() - begin_time ) /CLOCKS_PER_SEC) <-- Gives total running time
+double runTime = 15000.0; //run time in milliseconds
+auto start = std::chrono::system_clock::now();
+
 
 //***************** Main Function ****************//
 
@@ -197,9 +198,8 @@ std::cout << "\n";
 void *FSM(void *ptr){
 	printf("FSM Thread Running \n");
 	while(1){	//Run Various states until commanded to break
-		float time = ( float( clock() ) /CLOCKS_PER_SEC );
 
-		if((float( clock() - begin_time ) /CLOCKS_PER_SEC) > runTime){
+		if(timeFromStart(start) > runTime ){
 			printf("errorDiag has exited \n");
 			break;
 		}
@@ -241,7 +241,7 @@ void *FSM(void *ptr){
 void *bluetoothServer(void *ptr){
 	printf("bluetoothServer Thread Running \n");
 	while(1){
-		if((float( clock() - begin_time ) /CLOCKS_PER_SEC) > runTime){
+		if(timeFromStart(start) > runTime){
 			printf("bluetoothServer has exited \n");
 			break;
 		}
@@ -259,7 +259,7 @@ void *errorDiag(void *ptr){
 		ultraSensDiag();
 		motorDiag();
 		connectionDiag();
-		if((float( clock() - begin_time ) /CLOCKS_PER_SEC) > runTime){
+		if(timeFromStart(start) > runTime){
 			printf("Diag has exited \n");
 			break;
 		}
@@ -521,7 +521,7 @@ void disposal(){
 
 void endFunc(){
 	printf("FSM has exited \n");
-	std::cout << float( clock() ) /CLOCKS_PER_SEC; //print out time spent running program
+	std::cout << timeFromStart(start); //print out time spent running program
 }
 
 void pathFinding(){
@@ -706,7 +706,7 @@ void dataCollection(){
     	//delay(I2CDELAY);
     	printHardwareValues();
     	obstacleAvoidance();
-    	//if((float( clock() - begin_time ) /CLOCKS_PER_SEC) > runTime){
+    	//if(timeFromStart(start) > runTime){
 		//	printf("Data has exited \n");
 		//	break;
 		//}
@@ -727,4 +727,13 @@ void printHardwareValues(){
     printf("Temperature value: ");
     printf("%i\n",ti_temp);
     printf("\n");
+}
+
+double timeFromStart(auto y){
+
+    auto end = std::chrono::system_clock::now();
+    double z = std::chrono::duration_cast<std::chrono::milliseconds>(end-y).count();
+
+
+    return z;
 }
