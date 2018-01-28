@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="y10k.bincompanion_mini">
+    package="y10k.bincompanion_v1">
 
     <!-- Permissions for the app to access bluetooth functionality of the phone -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
@@ -21,5 +21,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".BluetoothService"
+            android:enabled="true"
+            android:exported="true">
+        </service>
     </application>
+
 </manifest>

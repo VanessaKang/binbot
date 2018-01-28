@@ -5,16 +5,20 @@
     <string name="pair_but">Pair</string>
 
     <!--These are status screen strings-->
-    <string name="nickname">Name:</string>
-    <string name="status">Mode:</string>
-    <string name="fill">Fill Level:</string>
-    <string name="batt">Battery Level:</string>
-    <string name="rssi">Distance:</string>
-    <string name="call_but">Call</string>
-    <string name="return_but">Return</string>
-    <string name="stop_but">Resume/Stop</string>
+    <string name="connection_label">CONNECTION: </string>
+    <string name="state_label">STATE: </string>
+    <string name="fill_label">FILL: </string>
 
-    <!--These are pairing screnn strings-->
-    <string name="paired">Currently Paired With</string>
-    <string name="discovered">Devices Found</string>
+    <string name="no_bluetooth">NO BLUETOOTH DEVICE DETECTED</string>
+    <string name="no_connection">NOT CONNECTED</string>
+    <string name="connecting">CONNECTING</string>
+    <string name="connected">CONNECTED</string>
+    <string name="failed">FAILED</string>
+
+    <!-- These are strings for the button-->
+    <string name="call_button">CALL</string>
+    <string name="return_button">RETURN</string>
+    <string name="resume_button">RESUME</string>
+    <string name="stop_button">STOP</string>
+    <string name="shutdown_button">SHUTDOWN</string>
 </resources>

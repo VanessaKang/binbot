@@ -37,7 +37,7 @@ This activity is responsible for the following actions:
 
 public class PairingActivity extends AppCompatActivity {
     //VARIABLE DECLARATION
-    private ArrayAdapter<String>  mDiscoveredAdaptor;
+    private ArrayAdapter<String> mDiscoveredAdaptor;
     private BluetoothAdapter mBluetoothAdapter;
     private boolean recieverFlag = false; //Checks to see if receiver was registered
 
@@ -173,6 +173,8 @@ public class PairingActivity extends AppCompatActivity {
 
             //Initiate Connection with Server
             BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(deviceAddress);
+
+
             Message msg = Message.obtain(null, CONSTANTS.CONNECT, device);
             try {
                 mMessenger.send(msg);
