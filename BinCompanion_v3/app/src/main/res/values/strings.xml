@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">BinCompanion_v3</string>
+
+    <!-- These are menu strings-->
+    <string name="connectMenuButton_Label">Connect</string>
+    <string name="listenMenuButton_Label">Connect</string>
+
+    <!--These are status screen strings-->
+    <string name="status_Label">Mode:</string>
+    <string name="fill_Label">Fill Level:</string>
+    <string name="battery_Label">Battery Level:</string>
+    <string name="rssi_Label">Distance:</string>
+
+    <string name="callButton_Label">Call</string>
+    <string name="returnButton_Label">Return</string>
+    <string name="resumeButton_Label">Resume</string>
+    <string name="stopButton_Label">Stop</string>
+    <string name="shutdownButton_Label">Shutdown</string>
+
+    <!--These are pairing screnn strings-->
+    <string name="paired_Label">Currently Paired With</string>
+    <string name="discovered_Label">Devices Found</string>
+    <string name="scanButton_Label">Scan</string>
+
+    <!--These are stings for managing connection-->
+    <string name="connected_Label">Connection Status: </string>
+    <string name="connected">CONNECTED</string>
+    <string name="connecting">CONNECTING</string>
+    <string name="notconnected">NOT CONNECTED</string>
+</resources>

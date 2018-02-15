@@ -3,6 +3,8 @@ package y10k.bincompanion_mini;
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
@@ -38,22 +40,28 @@ import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.UUID;
 
+import static android.content.ContentValues.TAG;
+
 public class MainActivity extends AppCompatActivity {
     //Variable Declaration
     TextView mConnection;
     TextView mState;
     TextView mFill;
+    TextView mRSSI;
 
     int mconnectionStatus = NOT_CONNECTED;
 
     BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     BluetoothSocket mSocket = null;
+    BluetoothGatt bluetoothGatt = null;
 
     Handler mHandler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
             switch(msg.what){
                 case CONNECTION_MADE:
+
+
                     mconnectionStatus = CONNECTED;
                     mConnection.setText(R.string.connected);
                     break;
@@ -66,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case DISCONNECTED:
                     mconnectionStatus = NOT_CONNECTED;
-                    mConnection.setText("Disconnected");
+                    mConnection.setText(R.string.disconnected);
             }
         }
     };
@@ -96,10 +104,13 @@ public class MainActivity extends AppCompatActivity {
         mConnection = findViewById(R.id.connection_content);
         mState = findViewById(R.id.state_content);
         mFill = findViewById(R.id.fill_content);
+        mRSSI = findViewById(R.id.rssi_content);
 
         // Ask for location permission if not already allowed
         if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+
+        registerReceiver(mReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
 
         if(mBluetoothAdapter == null){
             //Device does not support Bluetooth
@@ -113,6 +124,7 @@ public class MainActivity extends AppCompatActivity {
                 mConnection.setText(R.string.no_connection);
                 mState.setText(R.string.no_connection);
                 mFill.setText(R.string.no_connection);
+                mRSSI.setText(R.string.no_connection);
             }
         }
     }//onCreate
@@ -121,6 +133,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
 
+        unregisterReceiver(mReceiver);
         if(mConnectedThread != null){
             mConnectedThread.cancel();
         }
@@ -138,6 +151,11 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
         if (id == R.id.action_pair) {
             mConnection.setText(R.string.connecting);
+
+            try {
+                wait(2000);
+            } catch (Exception e){}
+
             connect();
         }
         return super.onOptionsItemSelected(item);
@@ -151,14 +169,13 @@ public class MainActivity extends AppCompatActivity {
         {
             public void run() {
                 boolean fail = false;
-
                 BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(RASP);
 
                 try {
                     mSocket = createBluetoothSocket(device);
                 } catch (IOException e) {
                     fail = true;
-                    Toast.makeText(getBaseContext(), "Socket creation failed", Toast.LENGTH_SHORT).show();
+                    mHandler.obtainMessage(CONNECTION_FAILED).sendToTarget();
                 }
                 // Establish the Bluetooth socket connection.
                 try {
@@ -167,19 +184,16 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         fail = true;
                         mSocket.close();
-                        mHandler.obtainMessage(CONNECTION_FAILED, -1, -1)
-                                .sendToTarget();
+                        mHandler.obtainMessage(CONNECTION_FAILED).sendToTarget();
                     } catch (IOException e2) {
                         //insert code to deal with this
-                        Toast.makeText(getBaseContext(), "Socket creation failed", Toast.LENGTH_SHORT).show();
+                        mHandler.obtainMessage(CONNECTION_FAILED).sendToTarget();;
                     }
                 }
                 if(!fail) {
                     mConnectedThread = new ConnectedThread(mSocket);
                     mConnectedThread.start();
-
-                    mHandler.obtainMessage(CONNECTION_MADE)
-                            .sendToTarget();
+                    mHandler.obtainMessage(CONNECTION_MADE).sendToTarget();
                 }
             }
         }.start();
@@ -196,74 +210,125 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private class ConnectedThread extends Thread {
-        private final BluetoothSocket mmSocket;
-        private final InputStream mmInStream;
-        private final OutputStream mmOutStream;
+        private final BluetoothSocket mSocket;
+        private final InputStream mInStream;
+        private final OutputStream mOutStream;
 
-        public ConnectedThread(BluetoothSocket socket) {
-            mmSocket = socket;
+        private ConnectedThread(BluetoothSocket socket){
+            mSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
 
-            // Get the input and output streams, using temp objects because
-            // member streams are final
+            //Get BluetoothSocket input and output streams
             try {
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
             } catch (IOException e) {
+                Log.e(TAG, "Failed to Create Socket");
             }
 
-            mmInStream = tmpIn;
-            mmOutStream = tmpOut;
-        }
+            mInStream = tmpIn;
+            mOutStream = tmpOut;
+        }//constructor
 
         public void run() {
-            byte[] buffer = new byte[1024];  // buffer store for the stream
-            int bytes; // bytes returned from read()
-            // Keep listening to the InputStream until an exception occurs
-            while (true) {
-                try {
-                    // Read from the InputStream
-                    bytes = mmInStream.available();
-                    if (bytes != 0) {
-                        buffer = new byte[1024];
-                        SystemClock.sleep(100); //pause and wait for rest of data. Adjust this depending on your sending speed.
-                        bytes = mmInStream.available(); // how many bytes are ready to be read?
-                        bytes = mmInStream.read(buffer, 0, bytes); // record how many bytes we actually read
-                        mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer)
-                                .sendToTarget(); // Send the obtained bytes to the UI activity
-                    }
+            byte[] buffer = new byte[1024];
+            int numBytes;
+
+            //Keep listening while connected
+            while (mconnectionStatus == CONNECTED){
+                try{
+                    //Read from InputStream
+                    numBytes = mInStream.read(buffer);
+
+                    //Handle Read Bytes
+                    mHandler.obtainMessage(MESSAGE_READ, numBytes,-1, buffer).sendToTarget();
                 } catch (IOException e) {
-                    e.printStackTrace();
-
+                    Log.i(TAG, "Closed");
+                    mHandler.obtainMessage(DISCONNECTED);
                     break;
-                }
-            }
+                }//try/catch
+            }//while
+        }//run
 
-            mHandler.obtainMessage(DISCONNECTED);
-        }
-
-        /* Call this from the main activity to send data to the remote device */
-        public void write(String input) {
-            byte[] bytes = input.getBytes();           //converts entered String into bytes
+        private void cancel() {
             try {
-                mmOutStream.write(bytes);
+                mSocket.close();
+                mHandler.obtainMessage(NOT_CONNECTED);
             } catch (IOException e) {
+                Log.e(TAG, "Failed to Close");
             }
         }
 
-        /* Call this from the main activity to shutdown the connection */
-        public void cancel() {
+        private void write(String s) {
             try {
-                mmSocket.close();
+                byte[] buffer = s.getBytes();
+                mOutStream.write(buffer);
             } catch (IOException e) {
-            }
-        }
-    }//Cnnected Thread
+                Log.e(TAG, "Failed to Write");
+            }//try/catch
+        }//write
+    }//Connected Thread
 
-    public void test(View v){
-        if (mconnectionStatus == CONNECTED) {
-            mConnectedThread.write("CALL");
+    public  void call_command (View v){
+        if(mconnectionStatus == CONNECTED) {
+            mConnectedThread.write("call");
         }
     }
+
+    public void return_command (View v){
+        if(mconnectionStatus == CONNECTED) {
+            mRSSI.setText(R.string.getting_rssi);
+            mConnectedThread.write("Starting Discovery");
+
+            if(mBluetoothAdapter.isDiscovering()) {
+                mBluetoothAdapter.cancelDiscovery();
+                mBluetoothAdapter.startDiscovery();
+            } else {
+                mBluetoothAdapter.startDiscovery();
+            }
+        }
+    }
+
+    public  void resume_command  (View v){
+        if(mconnectionStatus == CONNECTED) {
+            mConnectedThread.write("resume");
+
+        }
+    }
+
+    public  void stop_command (View v){
+        if(mconnectionStatus == CONNECTED) {
+            mConnectedThread.write("stop");
+        }
+    }
+
+    public  void shutdown_command(View v){
+        if(mconnectionStatus == CONNECTED) {
+            mConnectedThread.write("shutdown");
+        }
+    }
+
+    final BroadcastReceiver mReceiver = new BroadcastReceiver(){
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            String deviceAddress = device.getAddress();
+
+            if(BluetoothDevice.ACTION_FOUND.equals(action)){
+                if(deviceAddress.equals(RASP)) {
+                    int rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE);
+                    String s = Integer.toString(rssi);
+                    mConnectedThread.write(s);
+                    mRSSI.setText(s);
+
+                    mConnectedThread.write("Stop Discovery");
+                    mBluetoothAdapter.cancelDiscovery();
+
+
+                }
+            }
+        }
+    };
 }//MainActivity

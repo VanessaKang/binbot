@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!--Labels shown in the Toolbar-->
+    <item
+        android:id="@+id/action_Connect"
+        android:orderInCategory="1"
+        android:title="@string/connectMenuButton_Label"
+        app:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/action_Listen"
+        android:orderInCategory="2"
+        android:title="@string/listenMenuButton_Label"
+        app:showAsAction="ifRoom"/>
+</menu>

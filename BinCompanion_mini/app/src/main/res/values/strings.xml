@@ -8,12 +8,16 @@
     <string name="connection_label">CONNECTION: </string>
     <string name="state_label">STATE: </string>
     <string name="fill_label">FILL: </string>
+    <string name="rssi_label">RSSI: </string>
 
     <string name="no_bluetooth">NO BLUETOOTH DEVICE DETECTED</string>
     <string name="no_connection">NOT CONNECTED</string>
     <string name="connecting">CONNECTING</string>
     <string name="connected">CONNECTED</string>
     <string name="failed">FAILED</string>
+    <string name="disconnected">DISCONNECTED</string>
+
+    <string name="getting_rssi">RECEIVING…</string>
 
     <!-- These are strings for the button-->
     <string name="call_button">CALL</string>
