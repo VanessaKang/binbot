@@ -40,7 +40,7 @@ public class BluetoothService extends Service {
         BluetoothService getService() {return BluetoothService.this;}
     }//LocalBinder
 
-    //To hadle messages recieved by the client
+    //To handle messages received by the client
     private static final Handler mHandler = new Handler(Looper.getMainLooper()){
         @Override
         public void handleMessage(Message msg) {
@@ -50,11 +50,18 @@ public class BluetoothService extends Service {
                     break;
                 default:
                     super.handleMessage(msg);
-            }//swtich
-        }
-    };
+            }
+        }//handleMessage
+    };//Handler
     // =============================================================================================
     public BluetoothService() {
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        savedData = new Bundle();
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     }
 
     @Override
@@ -68,8 +75,76 @@ public class BluetoothService extends Service {
         return false;
     }//onUnbind
     // =============================================================================================
-    public void listen(){}
-    public void  connect(){}
+    public void listen() {
+        // Cancel any thread attempting to make a connection
+        if (mConnectThread != null) {
+            mConnectThread.cancel();
+            mConnectThread = null;
+        }
+
+        // Cancel any thread currently running a connection
+        if (mConnectedThread != null) {
+            mConnectedThread.cancel();
+            mConnectedThread = null;
+        }
+
+        //SIgnal Connection Disconnection
+        mConnectionStatus = Constants.STATE_DISCONNECTED;
+        savedData.putInt("state", Constants.STATE_DISCONNECTED);
+        mReceiver.send(Constants.STATE_CHANGE, savedData);
+
+        //Create thread te manage listening for devices
+        mAcceptThread = new AcceptThread();
+        mAcceptThread.start();
+    }//listen
+
+    public void connect(BluetoothDevice device){
+        //Cancel any attempted connections
+        if(mConnectThread != null) {
+            mConnectThread.cancel();
+            mConnectThread = null;
+        }
+
+        //Cancel any current connections
+        if (mConnectedThread != null) {
+            mConnectedThread.cancel();
+            mConnectedThread = null;
+        }
+
+        //Signal Connection Disconnection
+        mConnectionStatus = Constants.STATE_DISCONNECTED;
+        savedData.putInt("state", Constants.STATE_DISCONNECTED);
+        mReceiver.send(Constants.STATE_CHANGE, savedData);
+
+        //Create Thread to execute Connection
+        mConnectThread = new ConnectThread(device);
+        mConnectThread.start();
+    }//connect
+
+    public void disconnect(){
+        //Cancel istening threads
+        if(mAcceptThread != null) {
+            mAcceptThread.cancel();
+            mAcceptThread = null;
+        }
+
+        //Cancel any attempted connections
+        if(mConnectThread != null) {
+            mConnectThread.cancel();
+            mConnectThread = null;
+        }
+
+        //Cancel any current connections
+        if (mConnectedThread != null) {
+            mConnectedThread.cancel();
+            mConnectedThread = null;
+        }
+
+        //Signal Connection Disconnection
+        mConnectionStatus = Constants.STATE_DISCONNECTED;
+        savedData.putInt("state", Constants.STATE_DISCONNECTED);
+        mReceiver.send(Constants.STATE_CHANGE, savedData);
+    }
 
     public void manageConnection (BluetoothSocket socket) {
         mConnectedThread = new ConnectedThread((socket));
@@ -80,6 +155,7 @@ public class BluetoothService extends Service {
    }//manageSocket
 
     public void write(String command){
+        //Convert string command into bytes to be sent to Raspberry Pi
         if(mConnectionStatus == Constants.STATE_CONNECTED) {
             mConnectedThread.write(command.getBytes());
         }
@@ -97,7 +173,13 @@ public class BluetoothService extends Service {
             } catch (IOException e) {
                 Log.e(TAG, "Socket Listen Failed", e);
             }
+
             mmServerSocket = tmp;
+
+            //Change Connection State to listening
+            mConnectionStatus = Constants.STATE_LISTEN;
+            savedData.putInt("state", Constants.STATE_LISTEN);
+            mReceiver.send(Constants.STATE_CHANGE, savedData);
         }//AcceptThread
 
         public  void run() {
@@ -107,6 +189,10 @@ public class BluetoothService extends Service {
                     socket = mmServerSocket.accept();
                 } catch (IOException e) {
                     Log.e(TAG, "Socket Accept Failed", e);
+
+                    mConnectionStatus = Constants.STATE_FAILED;
+                    savedData.putInt("state", Constants.STATE_FAILED);
+                    mReceiver.send(Constants.STATE_CHANGE, savedData);
                     break;
                 }
 
@@ -125,6 +211,11 @@ public class BluetoothService extends Service {
         public void cancel(){
             try {
                 mmServerSocket.close();
+
+                //Signal Connection Disconnection
+                mConnectionStatus = Constants.STATE_DISCONNECTED;
+                savedData.putInt("state", Constants.STATE_DISCONNECTED);
+                mReceiver.send(Constants.STATE_CHANGE, savedData);
             } catch (IOException e) {
                 Log.e(TAG, "Could not close the connect socket", e);
             }
@@ -145,6 +236,11 @@ public class BluetoothService extends Service {
                 Log.e(TAG, "Could not create socket", e);
             }
             mmSocket = tmp;
+
+            //Change Connection State to Connecting
+            mConnectionStatus = Constants.STATE_CONNECTING;
+            savedData.putInt("state", Constants.STATE_CONNECTING);
+            mReceiver.send(Constants.STATE_CHANGE, savedData);
         }//ConnectThread
 
         public void run(){
@@ -155,6 +251,10 @@ public class BluetoothService extends Service {
             } catch (IOException e) {
                 try {
                     mmSocket.close();
+
+                    mConnectionStatus = Constants.STATE_FAILED;
+                    savedData.putInt("state", Constants.STATE_FAILED);
+                    mReceiver.send(Constants.STATE_CHANGE, savedData);
                 } catch (IOException f) {
                     Log.e(TAG, "Could not close client socket", e);
                 }
@@ -167,6 +267,11 @@ public class BluetoothService extends Service {
         public void cancel(){
             try{
                 mmSocket.close();
+
+                //Signal Connection Disconnection
+                mConnectionStatus = Constants.STATE_DISCONNECTED;
+                savedData.putInt("state", Constants.STATE_DISCONNECTED);
+                mReceiver.send(Constants.STATE_CHANGE, savedData);
             } catch (IOException e){
                 Log.e(TAG, "Could not close", e);
             }//try/catch
@@ -196,6 +301,11 @@ public class BluetoothService extends Service {
                 Log.e(TAG, "Error creating output stream",e);
             }
 
+            //Change Connection State to Connected
+            mConnectionStatus = Constants.STATE_CONNECTED;
+            savedData.putInt("state", Constants.STATE_CONNECTED);
+            mReceiver.send(Constants.STATE_CHANGE, savedData);
+
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
         }//ConnectedThread
@@ -211,10 +321,14 @@ public class BluetoothService extends Service {
                     readMsg.sendToTarget();
                 }catch (IOException e){
                     Log.e(TAG, "Failed to Read",e);
+
+                    //SIgnal Connection Disconnection
+                    mConnectionStatus = Constants.STATE_FAILED;
+                    savedData.putInt("state", Constants.STATE_FAILED);
+                    mReceiver.send(Constants.STATE_CHANGE, savedData);
                     break;
                 }//try/catch
             }//while
-
         }//run
 
         public void write(byte[] bytes) {
@@ -228,6 +342,11 @@ public class BluetoothService extends Service {
         public void cancel(){
             try {
                 mSocket.close();
+
+                //Signal Connection Disconnection
+                mConnectionStatus = Constants.STATE_DISCONNECTED;
+                savedData.putInt("state", Constants.STATE_DISCONNECTED);
+                mReceiver.send(Constants.STATE_CHANGE, savedData);
             } catch (IOException e) {
                 Log.e(TAG, "Failed to close socket", e);
             }//try/catch

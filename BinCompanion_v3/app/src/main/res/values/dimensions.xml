@@ -4,4 +4,6 @@
 
     <dimen name="layoutPadding">7dp</dimen>
     <dimen name="labelPadding">20dp</dimen>
+
+    <dimen name="listMargin">30dp</dimen>
 </resources>

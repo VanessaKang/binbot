@@ -1,15 +1,21 @@
 <resources>
     <string name="app_name">BinCompanion_v3</string>
 
+    <!-- Tittles -->
+    <string name="pairedDeviceTitle">Paired Devices</string>
+    <string name="discoveredDeviceTitle">Discovered Devices</string>
+
     <!-- These are menu strings-->
-    <string name="connectMenuButton_Label">Connect</string>
-    <string name="listenMenuButton_Label">Connect</string>
+    <string name="listenMenuButton_Label">Listen</string>
+    <string name="connectMenuButton_Label">Show Devices in Area</string>
+    <string name="showPairedMenuButton_Label">Show Paired Devices</string>
+    <string name="disconnectMenuButton_Label">Disconnect</string>
 
     <!--These are status screen strings-->
     <string name="status_Label">Mode:</string>
     <string name="fill_Label">Fill Level:</string>
     <string name="battery_Label">Battery Level:</string>
-    <string name="rssi_Label">Distance:</string>
+    <string name="rssi_Label">Signal Strength:</string>
 
     <string name="callButton_Label">Call</string>
     <string name="returnButton_Label">Return</string>
@@ -27,4 +33,21 @@
     <string name="connected">CONNECTED</string>
     <string name="connecting">CONNECTING</string>
     <string name="notconnected">NOT CONNECTED</string>
+    <string name="listening">LISTENING</string>
+    <string name="failed">FAILED</string>
+    <string name="disconnected">DISCONNECTED</string>
+
+    <!--Strings for managing Mode -->
+    <string name="collection">COLLECTION</string>
+    <string name="travel">TRAVEL</string>
+    <string name="disposal">DISPOSAL</string>
+    <string name="error">ERROR</string>
+
+    <!--Strings for managing Fill -->
+
+    <!--Strings for managing Battery -->
+
+    <!--Strings for managing RSSI -->
+
+    <string name="notimplemented">NOT IMPLEMENTED</string>
 </resources>

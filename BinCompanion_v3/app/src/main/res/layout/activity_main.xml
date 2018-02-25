@@ -2,6 +2,7 @@
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainview"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="y10k.bincompanion_v3.MainActivity">
@@ -87,33 +88,33 @@
                 android:id="@+id/status"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                tools:text="PLACEHOLDER"
+                android:padding="@dimen/labelPadding"
                 android:textSize="@dimen/labelTextSize"
-                android:padding="@dimen/labelPadding" />
+                tools:text="PLACEHOLDER" />
 
             <TextView
                 android:id="@+id/battery"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="@dimen/labelTextSize"
                 android:padding="@dimen/labelPadding"
-                tools:text="PLACEHOLDER"/>
+                android:textSize="@dimen/labelTextSize"
+                tools:text="PLACEHOLDER" />
 
             <TextView
                 android:id="@+id/fill"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="@dimen/labelTextSize"
                 android:padding="@dimen/labelPadding"
-                tools:text="PLACEHOLDER"/>
+                android:textSize="@dimen/labelTextSize"
+                tools:text="PLACEHOLDER" />
 
             <TextView
                 android:id="@+id/rssi"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="@dimen/labelTextSize"
                 android:padding="@dimen/labelPadding"
-                tools:text="PLACEHOLDER"/>
+                android:textSize="@dimen/labelTextSize"
+                tools:text="PLACEHOLDER" />
         </LinearLayout>
     </android.support.constraint.ConstraintLayout>
 
@@ -134,8 +135,8 @@
             android:layout_marginBottom="8dp"
             android:layout_marginEnd="8dp"
             android:layout_marginStart="8dp"
-            android:text="@string/callButton_Label"
             android:onClick="callCommand"
+            android:text="@string/callButton_Label"
             app:layout_constraintBottom_toTopOf="@+id/stop_button"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
@@ -148,8 +149,8 @@
             android:layout_marginEnd="8dp"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
-            android:text="@string/returnButton_Label"
             android:onClick="returnCommand"
+            android:text="@string/returnButton_Label"
             app:layout_constraintBottom_toTopOf="@+id/call_button"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
@@ -161,10 +162,10 @@
             android:layout_marginBottom="8dp"
             android:layout_marginEnd="8dp"
             android:layout_marginStart="8dp"
-            android:text="@string/resumeButton_Label"
-            android:onClick="resumeCommand"
-            android:visibility="invisible"
             android:enabled="false"
+            android:onClick="resumeCommand"
+            android:text="@string/resumeButton_Label"
+            android:visibility="invisible"
             app:layout_constraintBottom_toTopOf="@+id/shutdown_button"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
@@ -176,8 +177,8 @@
             android:layout_marginBottom="8dp"
             android:layout_marginEnd="8dp"
             android:layout_marginStart="8dp"
-            android:text="@string/stopButton_Label"
             android:onClick="stopCommand"
+            android:text="@string/stopButton_Label"
             app:layout_constraintBottom_toTopOf="@+id/shutdown_button"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
@@ -189,11 +190,10 @@
             android:layout_marginBottom="8dp"
             android:layout_marginEnd="8dp"
             android:layout_marginStart="8dp"
-            android:text="@string/shutdownButton_Label"
             android:onClick="shutdownCommand"
+            android:text="@string/shutdownButton_Label"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
     </android.support.constraint.ConstraintLayout>
-
 </android.support.constraint.ConstraintLayout>
