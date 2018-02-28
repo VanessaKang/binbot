@@ -23,7 +23,6 @@ socklen_t opt = sizeof(rem_addr);
 char address[18] = "B8:27:EB:98:DA:8B"; //Address of the pi NOTE: Must change for each spereate pi used  
 
 pthread_t readThread, writeThread; 
-
 clock_t t, new_t; 
 
 //FUNCTION DECLARATION 
@@ -42,13 +41,13 @@ int main() {
 		listen(); 
 		spawn(); 
 
-		//TODO While loop used to manage threads for lost connections 
+		//While loop used to manage threads for lost connections 
 		while (connectionStatus == STATE_CONNECTED) {
 			if (client < 0) {
 				connectionStatus = STATE_NOCONNECTION; 
+				printf("Connection Lost"); 
 			}
 		} 
-
 		close();  
 	}//while 
 }//main 
@@ -109,7 +108,7 @@ void writeToApp(){
 				printf("wrote successfully\n"); 
 			}
 		
-			//TODO Reset Timer, t 
+			//Reset Timer, t 
 			t = clock() / CLOCKS_PER_SEC;
 		}//if 
 	}//while 
@@ -128,7 +127,7 @@ void readFromApp(){
 
 //Close the connection and cancel threads 
 void close(){ 
-	//TODO close Threads 
+	//close Threads 
 	pthread_exit(void *readThread);
 	pthread_exit(void *writeThread); 
 
