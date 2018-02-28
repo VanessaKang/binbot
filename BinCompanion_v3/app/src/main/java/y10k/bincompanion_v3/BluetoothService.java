@@ -159,7 +159,13 @@ public class BluetoothService extends Service {
         if(mConnectionStatus == Constants.STATE_CONNECTED) {
             mConnectedThread.write(command.getBytes());
         }
-    }
+    }//write
+
+    public void connection_failed(){
+        mConnectionStatus = Constants.STATE_FAILED;
+        savedData.putInt("state", Constants.STATE_FAILED);
+        mReceiver.send(Constants.STATE_CHANGE, savedData);
+    }//connection failed
    // ==============================================================================================
     //Server Side Implementation
     private class AcceptThread extends Thread {
@@ -168,7 +174,8 @@ public class BluetoothService extends Service {
         public AcceptThread(){
             BluetoothServerSocket tmp = null;
             try {
-                tmp = mBluetoothAdapter.listenUsingRfcommWithServiceRecord(Constants.SERVICE_NAME,
+                tmp = mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(
+                        Constants.SERVICE_NAME,
                         Constants.MY_UUID);
             } catch (IOException e) {
                 Log.e(TAG, "Socket Listen Failed", e);
@@ -189,10 +196,7 @@ public class BluetoothService extends Service {
                     socket = mmServerSocket.accept();
                 } catch (IOException e) {
                     Log.e(TAG, "Socket Accept Failed", e);
-
-                    mConnectionStatus = Constants.STATE_FAILED;
-                    savedData.putInt("state", Constants.STATE_FAILED);
-                    mReceiver.send(Constants.STATE_CHANGE, savedData);
+                    connection_failed();
                     break;
                 }
 
@@ -231,7 +235,8 @@ public class BluetoothService extends Service {
             mmDevice = device;
 
             try {
-                tmp = device.createRfcommSocketToServiceRecord(Constants.MY_UUID);
+                tmp = device.createInsecureRfcommSocketToServiceRecord(Constants.MY_UUID);
+                //tmp = device.createRfcommSocketToServiceRecord(Constants.MY_UUID);
             } catch (IOException e) {
                 Log.e(TAG, "Could not create socket", e);
             }
@@ -251,10 +256,7 @@ public class BluetoothService extends Service {
             } catch (IOException e) {
                 try {
                     mmSocket.close();
-
-                    mConnectionStatus = Constants.STATE_FAILED;
-                    savedData.putInt("state", Constants.STATE_FAILED);
-                    mReceiver.send(Constants.STATE_CHANGE, savedData);
+                    connection_failed();
                 } catch (IOException f) {
                     Log.e(TAG, "Could not close client socket", e);
                 }
@@ -322,10 +324,8 @@ public class BluetoothService extends Service {
                 }catch (IOException e){
                     Log.e(TAG, "Failed to Read",e);
 
-                    //SIgnal Connection Disconnection
-                    mConnectionStatus = Constants.STATE_FAILED;
-                    savedData.putInt("state", Constants.STATE_FAILED);
-                    mReceiver.send(Constants.STATE_CHANGE, savedData);
+                    //Signal Connection Disconnection
+                    disconnect();
                     break;
                 }//try/catch
             }//while

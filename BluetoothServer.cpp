@@ -124,6 +124,4 @@ void* readOnThread(void* ptr) {
 	if (bytes_read > 0) {
 		printf("received [%s]\n", buf);
 	}
-
-
 }

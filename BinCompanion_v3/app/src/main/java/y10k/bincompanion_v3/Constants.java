@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public final class Constants {
     static final String SERVICE_NAME = "BinBrothers";
-    static final UUID MY_UUID = UUID.fromString("18f86520-e2af-408d-8fe6-d7dc8336c13a");
+    static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); //default pi UUID
 
     //Handler Messages
     static final int MESSAGE_READ = 5;

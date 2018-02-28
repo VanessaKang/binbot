@@ -65,12 +65,19 @@ public class MainActivity extends AppCompatActivity {
             switch (resultCode){
                 case Constants.STATE_CHANGE:
                     mConnectionStatus = resultData.getInt("state");
-                    updateUI();
+
+                    //Ensure that UI is updated only on the main thread
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateUI();
+                        }
+                    });
                     break;
 
                 case Constants.OBTAINED_ADDRESS:
-                    //TODO: Handle error that occurs when Paired Device is selected but not in the area (Leads to program crash)
-                    BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(resultData.getString("address"));
+                    String deviceAddress = resultData.getString("address");
+                    BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(deviceAddress);
                     mService.connect(device);
                     break;
 
