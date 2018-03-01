@@ -122,7 +122,9 @@ public class BluetoothService extends Service {
     }//connect
 
     public void disconnect(){
-        //Cancel istening threads
+        //Message to inform of disconnection
+        write(Constants.DISCONNECT);
+        //Cancel listening threads
         if(mAcceptThread != null) {
             mAcceptThread.cancel();
             mAcceptThread = null;

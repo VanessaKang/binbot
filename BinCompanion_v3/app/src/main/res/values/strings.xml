@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">BinCompanion_v3</string>
 
-    <!-- Tittles -->
+    <!-- Titles -->
     <string name="pairedDeviceTitle">Paired Devices</string>
     <string name="discoveredDeviceTitle">Discovered Devices</string>
 
@@ -23,12 +23,12 @@
     <string name="stopButton_Label">Stop</string>
     <string name="shutdownButton_Label">Shutdown</string>
 
-    <!--These are pairing screnn strings-->
+    <!--These are pairing screen strings-->
     <string name="paired_Label">Currently Paired With</string>
     <string name="discovered_Label">Devices Found</string>
     <string name="scanButton_Label">Scan</string>
 
-    <!--These are stings for managing connection-->
+    <!--These are strings for managing connection-->
     <string name="connected_Label">Connection Status: </string>
     <string name="connected">CONNECTED</string>
     <string name="connecting">CONNECTING</string>
