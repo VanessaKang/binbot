@@ -98,12 +98,14 @@ void listen() {
 void spawn() {
 	//TODO Create Thread for reading
 	int read_result = pthread_create(&readThread, NULL, readFromApp, NULL); 
+
 	if (read_result != 0) {
 		printf("MAIN: Read Thread Creation Failed \n"); 
 	}
 
 	//TODO Create thread for writing 
 	int write_result = pthread_create(&writeThread, NULL, writeToApp, NULL); 
+
 	if (write_result != 0) {
 		printf("MAIN: Write Thread Creation Failed \n");
 	} 
@@ -113,8 +115,10 @@ void spawn() {
 }//spawn 
 
 //TODO Handles periodic messaging to App and error messaging 
+
 void *writeToApp(void *ptr){
 	//Initialize timer,t for first broadcast 
+
 	t = clock() / CLOCKS_PER_SEC;
 
 	while (connectionStatus == STATE_CONNECTED) {
@@ -123,6 +127,32 @@ void *writeToApp(void *ptr){
 
 		//Braodcast a message every # seconds 
 		if (new_t - t > 5) {
+
+			//Create udpate code to pass to the App 
+			/* 
+			switch(ei_state){ 
+				case ERRORSTATE:
+					updateMsg += 10;
+					break; 
+				case TRAVELSTATE: 
+					updateMsg += 20;
+					break; 
+				case COLLECTIONSTATE: 
+					updateMsg += 30;
+					break; 
+				case DISPOSALSTATE: 
+					updateMsg += 40;
+					break; 
+				default:
+					updateMsg += 50;
+					break; 
+			} 
+			
+			switch(ed_fillLevel){
+				default: 
+					break; 
+			} 
+			*/
 			//TODO Write to BinCompanion every time period status of relevent variables 
 			int bytes_wrote = write(client, "Hello", 5); 
 			if (bytes_wrote > 0) {

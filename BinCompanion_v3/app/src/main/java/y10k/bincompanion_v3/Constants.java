@@ -51,6 +51,7 @@ public final class Constants {
     static final String STOP = "stop";
     static final String RESUME = "resume";
     static final String SHUTDOWN = "shutdown";
+    static final String DISCONNECT = "disconnect";
 }
 
 
