@@ -49,8 +49,8 @@ int main(){
 		}//if
 
 		 // send a message
-		if (status == 0) {
-			status = write(s, "hello!", 6);
+		if (client == 0) {
+			client = write(client, "hello!", 6);
 		}
 	}
 

@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <bluetooth/bluetooth.h> 
 #include <bluetooth/rfcomm.h> 
+#include <string.h>
 
 #include <pthread.h> 
 #include <time.h> 
@@ -28,26 +29,36 @@ clock_t t, new_t;
 //FUNCTION DECLARATION 
 void setupSocket(); 
 void listen(); 
-void spawn(): 
-void writeToApp(); 
-void readFromApp(); 
+void spawn();
+void *writeToApp(void *ptr); 
+void *readFromApp(void *ptr); 
 void close(); 
 
 //MAIN 
 int main() {
 	setupSocket(); 
-	
+
 	while (true) {
 		listen(); 
 		spawn(); 
 
+		clock_t begin, end; //FOR TESTING
+		begin = clock()/CLOCKS_PER_SEC;  //FOR TESTING 
+
 		//While loop used to manage threads for lost connections 
 		while (connectionStatus == STATE_CONNECTED) {
-			if (client < 0) {
-				connectionStatus = STATE_NOCONNECTION; 
-				printf("Connection Lost"); 
-			}
-		} 
+			///////FOR TESTING//////////////////////////////////////
+			end = clock()/CLOCKS_PER_SEC; 
+			if(end - begin > 5){
+				printf("MAIN: Looping\n"); 
+				begin = clock()/CLOCKS_PER_SEC; 
+			} 
+			/////////////////////////////////////////////////////////////////////
+		}//while(connectionStatus) 
+
+		//Handles status when connection is lost 
+		printf("MAIN: Connection Lost\n"); 
+
 		close();  
 	}//while 
 }//main 
@@ -68,35 +79,45 @@ void setupSocket() {
 //set socket to listen for connection requests 
 void listen() {
 	//put socket into listening mode (blocking call) 
-	printf("Listening...\n");
+	printf("MAIN: Listening...\n");
 	listen(sock, 1);
 
 	//Accept a connection 
 	client = accept(sock, (struct sockaddr *) &rem_addr, &opt);
+
+	//Print connection success 
+	ba2str(&rem_addr.rc_bdaddr, buf); 
+	printf("MAIN: accepted connection from %s\n", buf); 
+	memset(buf, 0, sizeof(buf)); //clears byte array 
+	
+	//Alter connection status to display succcess 
 	connectionStatus = STATE_CONNECTED; 
 }//listen 
 
 //Spawn Threads to handle connection read and write 
 void spawn() {
 	//TODO Create Thread for reading
-	int read_result = pthread(&readThread, NULL, readFromApp, NULL); 
+	int read_result = pthread_create(&readThread, NULL, readFromApp, NULL); 
 	if (read_result != 0) {
-		printf("Read Thread Creation Failed \n"); 
+		printf("MAIN: Read Thread Creation Failed \n"); 
 	}
 
 	//TODO Create thread for writing 
-	int write_result = pthread(&writeThread, NULL, writeToApp, NULL); 
+	int write_result = pthread_create(&writeThread, NULL, writeToApp, NULL); 
 	if (write_result != 0) {
-		printf("Write Thread Creation Failed \n");
-	}
+		printf("MAIN: Write Thread Creation Failed \n");
+	} 
+
+	//pthread_join(readThread, NULL); 
+	//pthread_join(writeThread, NULL); 
 }//spawn 
 
 //TODO Handles periodic messaging to App and error messaging 
-void writeToApp(){
-	//Initialize timer,t for first braodcast 
+void *writeToApp(void *ptr){
+	//Initialize timer,t for first broadcast 
 	t = clock() / CLOCKS_PER_SEC;
 
-	while (true) {
+	while (connectionStatus == STATE_CONNECTED) {
 		//Set timer, new_t to compare timer, twith 
 		new_t = clock() / CLOCKS_PER_SEC; 
 
@@ -105,7 +126,7 @@ void writeToApp(){
 			//TODO Write to BinCompanion every time period status of relevent variables 
 			int bytes_wrote = write(client, "Hello", 5); 
 			if (bytes_wrote > 0) {
-				printf("wrote successfully\n"); 
+				printf("WRITE: wrote successfully\n"); 
 			}
 		
 			//Reset Timer, t 
@@ -115,21 +136,29 @@ void writeToApp(){
 }//wirteToApp 
 
 //TODO Handles reading commands from the app 
-void readFromApp(){
+void *readFromApp(void *ptr){
 	// read data from the client
-	while (true) {
+	while (connectionStatus == STATE_CONNECTED) {
 		int bytes_read = read(client, buf, sizeof(buf));
 		if (bytes_read > 0) {
-			printf("received [%s]\n", buf);
-		}
-	}
+			printf("READ: received %s\n", buf);
+
+			//Compare buf to strings to perfrom actions 
+			if(strcmp(buf, "disconnect") == 0){
+				connectionStatus = STATE_NOCONNECTION;
+			}
+	
+			//clears byte array 
+			memset(buf, 0, sizeof(buf));  
+		}//if
+	}//while
 }//readFromApp 
 
 //Close the connection and cancel threads 
 void close(){ 
 	//close Threads 
-	pthread_exit(void *readThread);
-	pthread_exit(void *writeThread); 
+	pthread_exit(&readThread);
+	pthread_exit(&writeThread); 
 
 	//close connection 
 	close(client);
