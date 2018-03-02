@@ -41,12 +41,14 @@ public class BluetoothService extends Service {
     }//LocalBinder
 
     //To handle messages received by the client
-    private static final Handler mHandler = new Handler(Looper.getMainLooper()){
+    private final Handler mHandler = new Handler(Looper.getMainLooper()){
         @Override
         public void handleMessage(Message msg) {
             //TODO
             switch(msg.what) {
                 case Constants.MESSAGE_READ:
+                    savedData.putString("msg", msg.obj.toString());//FOR TESTING
+                    mReceiver.send(Constants.MSG_DECODED, savedData);
                     break;
                 default:
                     super.handleMessage(msg);
