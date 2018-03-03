@@ -1,8 +1,8 @@
-
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 #include <vector>
+#include <unistd.h>
 
 //using namespace std;
 
@@ -10,12 +10,14 @@ int main() {
     int count=0;
 
     std::vector<int> ei_state1;
+    std::vector<char*> beaconVal;
     std::vector<int> ei_userCommand1;
     std::vector<int> ei_error1;
 
     std::ifstream inFile;
-    
-    inFile.open("CSV.csv");
+    while(1){
+
+    inFile.open("beaconvalues.txt");
 
     if (!inFile) {
         std::cout << "Unable to open file";
@@ -27,11 +29,12 @@ int main() {
     char thisVal[MAXSIZE];
     
     while (inFile.getline(thisVal,MAXSIZE,',')) {
-        std::stoi(thisVal);
-        std::cout << thisVal;
-        printf("\n");
-        ei_state1.push_back(std::stoi(thisVal));
-
+        //std::stoi(thisVal);
+        //std::cout << thisVal;
+        //printf("\n");
+        //ei_state1.push_back(std::stoi(thisVal));
+	//end of vector
+	values.push_back(thisVal);
     }
     
     inFile.close();
@@ -41,10 +44,15 @@ int main() {
     printf("print each vector \n");
     //int i= ei_state.front();
     int i = 0;
-    for(i; i<ei_state1.size();i++){
-        std::cout << ei_state1[i] << "\n";
+    for(i; i<values.size();i++){
+        std::cout << values[i] << "\n";
     }
+    /*for(i; i<beaconVal.size();i++){
+        std::cout << beaconVal[i] << "\n";
+    }*/
     
-    printf("vector size: %i \n", ei_state1.size());
+    printf("vector size: %i \n", values.size());
+    usleep(2000000);
+    }
     return 0;
 }
