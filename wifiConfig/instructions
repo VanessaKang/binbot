@@ -1,0 +1,10 @@
+1. Open command line
+2. sudo nano /etc/wpa_supplicant/wpa_supplicant.conf
+3. Copy content from file wpa_supplicant.conf in this folder
+4. sudo nano/etc/network/interfaces
+5. Copy content from file interfaces in this folder
+6. sudo ifdown wlan0
+7. sudo ifup wlan0
+8. You should be connected to wifi on pi (ping 8.8.8.8 to confirm)
+9. IP address should be 172.17.97.14 (ifconfig to confirm)
+10. SSH using WinSCP (Username: pi Password: capstone) 

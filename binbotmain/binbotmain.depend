@@ -1,0 +1,19 @@
+# depslib dependency file v1.0
+1516911007 source:/home/vkangster/Documents/gitlab/binbot/binbotmain/main.cpp
+	<stdio.h>
+	<iostream>
+	<fcntl.h>
+	<unistd.h>
+	<string.h>
+	<pthread.h>
+	<time.h>
+	<math.h>
+	<wiringPi.h>
+	<fcntl.h>
+	<sys/ioctl.h>
+	<linux/i2c-dev.h>
+	<arpa/inet.h>
+	<sys/socket.h>
+	<netdb.h>
+	<ifaddrs.h>
+
