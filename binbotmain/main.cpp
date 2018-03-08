@@ -15,8 +15,10 @@
 #include <netdb.h>
 #include <ifaddrs.h>
 #include <chrono>
-//declare primary functions
+#include <mutex>
 //hello
+std::mutex mtx;
+//declare primary functions
 void *FSM(void* ptr);
 void *bluetoothServer(void* ptr);
 void *errorDiag(void* ptr);
@@ -29,7 +31,6 @@ void pathFinding();
 void obstacleAvoidance();
 void endFunc();
 void logFunc();
-
 //declare hardware functions
 void setupPins();
 void setupi2c();
@@ -43,7 +44,6 @@ void moveForward();
 void adjustAnglePositive();
 void adjustAngleNegative();
 void allStop();
-
 
 //declare sensor/actuator functions
 void ultrasonicPing();
@@ -66,20 +66,21 @@ double timeFromStart(auto y);
 
 //DIGITAL IO Pi GPIO pins
 #define PIN_TEMP 5
-#define PIN_RMFWD 20
-#define PIN_RMRVS 21
-#define PIN_LMFWD 26
-#define PIN_LMRVS 4
+#define PIN_RMFWD 28
+#define PIN_RMRVS 29
+#define PIN_LMFWD 25
+#define PIN_LMRVS 7
 #define PIN_SERVO 17
 
 // Define Constants used in code **** Needs to be edited
 //BIN SENSOR CONSTANTS
 #define BINFULLDIST 5
 #define BINEMPTYDIST 30
-#define FTHRESH 40
-#define LRTHRESH 25
+#define FTHRESH 60
+#define LRTHRESH 40
 #define ALLOWEDMOVES 10
 #define ATDESTRSSI -40
+#define MAXTEMP 40
 
 
 //State Constants
@@ -100,6 +101,13 @@ int file_i2c;
 int length;
 unsigned char buffer[60] = {0};
 unsigned char ultraVal;
+int fillSensorCount;
+bool travelLock;
+int currentMove=0;
+//1=forward
+//2=right
+//3=left
+
 #define I2CDELAY 75
 
 
@@ -115,7 +123,7 @@ bool eb_destReached;
 bool eb_nextDest;
 int ei_prevState;
 double md_botLocation;
-int ti_temp;
+int ti_temp=25;
 double cmd_objDist;
 double ed_appRssi;
 double ed_beaconRssi = -70;
@@ -147,9 +155,8 @@ int numMoves;
 int obstacleCount=1;
 
 //Declare time variable for timing purposes
-double runTime = 45000.0; //run time in milliseconds
+double runTime = 4500000.0; //run time in milliseconds
 auto start = std::chrono::system_clock::now();
-
 
 //***************** Main Function ****************//
 
@@ -172,21 +179,19 @@ int iret1FSM, iret2bluetoothServer, iret3errorDiag, iret4Data;
 //Initialize global variables for start of FSM, Diagnostics and Communications (maybe read from a log to get last values)
 
 //create independent threads to run each function
-iret1FSM = pthread_create( &thread1, NULL, FSM, NULL);
-iret2bluetoothServer = pthread_create( &thread2, NULL, bluetoothServer, NULL);
-iret3errorDiag = pthread_create( &thread3, NULL, errorDiag, NULL);
+// iret1FSM = pthread_create( &thread1, NULL, FSM, NULL);
+// iret2bluetoothServer = pthread_create( &thread2, NULL, bluetoothServer, NULL);
+// iret3errorDiag = pthread_create( &thread3, NULL, errorDiag, NULL);
 iret4Data = pthread_create( &thread4, NULL, Data, NULL);
 
 
 //wait for each thread to finish before completing program
-pthread_join( thread1, NULL);
-pthread_join( thread2, NULL);
-pthread_join( thread3, NULL);
+// pthread_join( thread1, NULL);
+// pthread_join( thread2, NULL);
+// pthread_join( thread3, NULL);
 pthread_join( thread4, NULL);
 
 //print to console to confirm program has finished
-allStop();
-writeData(10);
 std::cout << "\n";
 std::cout << "Program Ended";
 std::cout << "\n";
@@ -222,7 +227,8 @@ void *FSM(void *ptr){
                 if(ei_prevState != 1){
                     printf("Travel State = %i \n", ei_state);
                 }
-                travel();
+               // travel();
+                obstacleAvoidance();
                 ei_prevState = 1;
             break;
             case 2: //Collection State
@@ -257,7 +263,7 @@ void *bluetoothServer(void *ptr){
 void *errorDiag(void *ptr){
     printf("errorDiag Thread Running \n");
     while(1){
-        overheatDiag();
+        //overheatDiag();
         batteryLowDiag();
         fallOverDiag();
         immobileDiag();
@@ -280,7 +286,12 @@ void *errorDiag(void *ptr){
 }
 
 void *Data(void *ptr){
-    dataCollection();
+    printf("data Thread running \n");
+    //while(1){
+   	// obstacleAvoidance();
+		writeData(18);
+        //delay(100);
+    //}
 }
 
 //*********************** Supporting Functions ********************************//
@@ -292,9 +303,12 @@ void *Data(void *ptr){
 //and so that the robot has a memory. Probably would be useful.
 
 void setupPins(){
-  wiringPiSetupGpio();
+  wiringPiSetup();
   //ASSIGN DIGITAL IO
-
+  pinMode(PIN_RMFWD,OUTPUT);
+  pinMode(PIN_RMRVS,OUTPUT);
+  pinMode(PIN_LMFWD,OUTPUT);
+  pinMode(PIN_LMRVS,OUTPUT);
   pinMode(PIN_TEMP,INPUT);
   pullUpDnControl(PIN_TEMP,PUD_DOWN);
 }
@@ -319,64 +333,73 @@ void setupi2c(){
 }
 
 unsigned char readData(){
+    //mtx.lock();
     length = 1;
     if (read(file_i2c, buffer, length) != length){
         //ERROR HANDLING: i2c transaction failed
         //printf("Failed to read from the i2c bus.\n");
     }
     unsigned char val = buffer[0];
+    //mtx.unlock();
     return val;
 }
 
 void writeData(int val){
+    //mtx.lock();
     buffer[0] = val;
     length = 1;
     if (write(file_i2c, buffer, length) != length){
         /* ERROR HANDLING: i2c transaction failed */
         //printf("Failed to write to the i2c bus.\n");
     }
+    //mtx.unlock();
 }
 
 void rightMotorForward(){
-    //writeData(11);
-    //delay(I2CDELAY);
-    digitalWrite(PIN_RMFWD,HIGH);
-    digitalWrite(PIN_RMRVS,LOW);
+    delay(I2CDELAY);
+    writeData(11);
+    //digitalWrite(PIN_RMFWD,HIGH);
+    //digitalWrite(PIN_RMRVS,LOW);
 }
 
 void rightMotorReverse(){
-    //writeData(12);
-    //delay(I2CDELAY);
-    digitalWrite(PIN_RMRVS,HIGH);
-    digitalWrite(PIN_RMFWD,LOW);
+    delay(I2CDELAY);
+    writeData(12);
+    delay(I2CDELAY);
+    //digitalWrite(PIN_RMRVS,HIGH);
+    //digitalWrite(PIN_RMFWD,LOW);
 }
 
 void leftMotorForward(){
-    //writeData(14);
-    //delay(I2CDELAY);
-    digitalWrite(PIN_LMFWD,HIGH);
-    digitalWrite(PIN_LMRVS,LOW);
+    delay(I2CDELAY);
+    writeData(14);
+    delay(I2CDELAY);
+    //digitalWrite(PIN_LMFWD,HIGH);
+    //digitalWrite(PIN_LMRVS,LOW);
 }
 
 void leftMotorReverse(){
-    //writeData(15);
-    //delay(I2CDELAY);
-    digitalWrite(PIN_LMRVS,HIGH);
-    digitalWrite(PIN_LMFWD,LOW);
+    delay(I2CDELAY);
+    writeData(15);
+    delay(I2CDELAY);
+    //digitalWrite(PIN_LMRVS,HIGH);
+    //digitalWrite(PIN_LMFWD,LOW);
 }
 
 void rightMotorStop(){
-    //writeData(13);
-    //delay(I2CDELAY);
-    digitalWrite(PIN_RMRVS,LOW);
-    digitalWrite(PIN_RMFWD,LOW);
+    delay(I2CDELAY);
+    writeData(13);
+    delay(I2CDELAY);
+    //digitalWrite(PIN_RMRVS,HIGH);
+    //digitalWrite(PIN_RMFWD,LOW);
 }
 
 void leftMotorStop(){
-    //writeData(16);
-    //delay(I2CDELAY);
-    digitalWrite(PIN_LMFWD,LOW);
-    digitalWrite(PIN_LMRVS,LOW);
+    delay(I2CDELAY);
+    writeData(16);
+    delay(I2CDELAY);
+    //digitalWrite(PIN_LMFWD,LOW);
+    //digitalWrite(PIN_LMRVS,LOW);
 }
 
 void moveForward(){
@@ -402,6 +425,7 @@ void adjustAngleNegative(){
 void errorState(){
     printf("Error State\n");
 }
+//test
 
 void travel(){
     while (ei_userCommand == NO_COMMAND && ei_error == 0)
@@ -555,47 +579,70 @@ void pathFinding(){
 }
 
 void obstacleAvoidance(){
-    if(numMoves>=ALLOWEDMOVES){
-        if((ci_sensorFront>=FTHRESH) && (ci_sensorRight>=LRTHRESH) && (ci_sensorLeft>=LRTHRESH)){
-            numMoves = 0;
-        }
-        else{
-            numMoves++;
-            adjustAngleNegative();
-            //printf("Turning Right\n");
-        }
-    }
-    if(numMoves < ALLOWEDMOVES){
-        if((ci_sensorFront>=FTHRESH) && (ci_sensorRight>=LRTHRESH) && (ci_sensorLeft>=LRTHRESH)){
-            numMoves = 0;
-            moveForward(); 
-            //printf("Moving Forward\n");
-        }
-        else if(ci_sensorFront<=FTHRESH){
-            numMoves ++;
-            if(ci_sensorRight < ci_sensorLeft){
-                adjustAnglePositive();
-                //printf("Turning Left\n");
-            }
-            else if (ci_sensorLeft < ci_sensorRight) {
-                adjustAngleNegative();
-                //printf("Turning Right\n");
-            }
-        }
-        else if(ci_sensorFront>=FTHRESH){
-            numMoves ++;
-            if(ci_sensorRight<=LRTHRESH){
-                adjustAnglePositive();
-                //printf("Turning Left\n");
-            }
-            else if (ci_sensorLeft<=LRTHRESH) {
-                adjustAngleNegative();
-                //printf("Turning Right\n");
-            }
-        }
-    }
-    //printf("Nummoves: \t");
-    //printf("%i\n",numMoves);
+    // if(numMoves>=ALLOWEDMOVES){
+    //     if((ci_sensorFront>=FTHRESH) && (ci_sensorRight>=LRTHRESH) && (ci_sensorLeft>=LRTHRESH)){
+    //         numMoves = 0;
+    //     }
+    //     else{
+    //         numMoves++;
+    //         if(currentMove!=2){
+    //             adjustAngleNegative();    
+    //         }
+    //         printf("Turning Right\n");
+    //         currentMove = 2;
+    //     }
+    // }
+    // if(numMoves < ALLOWEDMOVES){
+    //     if((ci_sensorFront>=FTHRESH) && (ci_sensorRight>=LRTHRESH) && (ci_sensorLeft>=LRTHRESH)){
+    //         numMoves = 0;
+    //         if(currentMove!=1){
+    //             moveForward();   
+    //         }
+    //         printf("Moving Forward\n");
+    //         currentMove = 1;
+    //     }
+    //     else if(ci_sensorFront<=FTHRESH){
+    //         numMoves ++;
+    //         if(ci_sensorRight < ci_sensorLeft){
+    //             if(currentMove!=3){
+    //                 adjustAnglePositive();                    
+    //             }
+    //             printf("Turning Left\n");
+    //             currentMove = 3;
+    //         }
+    //         else if (ci_sensorLeft < ci_sensorRight) {
+    //             if(currentMove!=2){
+    //                 adjustAngleNegative();                    
+
+
+    //             }
+
+    //             printf("Turning Right\n");
+    //             currentMove = 2;
+    //         }
+    //     }
+    //     else if(ci_sensorFront>=FTHRESH){
+    //         numMoves ++;
+    //         if(ci_sensorRight<=LRTHRESH){
+    //             if(currentMove!=3){
+    //                 adjustAnglePositive();                    
+    //             }
+    //             printf("Turning Left\n");
+    //             currentMove = 3;
+    //         }
+    //         else if (ci_sensorLeft<=LRTHRESH) {
+    //             if(currentMove!=2){
+    //                 adjustAngleNegative();    
+    //             }
+    //             printf("Turning Right\n");
+    //             currentMove = 2;
+    //         }
+    //     }
+    // }
+    // printf("Nummoves: \t");
+    // printf("%i\n",numMoves);
+    //writeData(18);
+    //delay(I2CDELAY);
 }
 
 void logFunc(){
@@ -613,7 +660,7 @@ void binLevelDetect(){
 void overheatDiag(){
     //LAN9512 has operating range of 0 celsius to 70 celsius
     // 750mV at 25 celsius and 10mV/(degree celsius)
-    if (ti_temp >= 35)
+    if (ti_temp >= MAXTEMP)
     {
         printf("Overheated\n");
         ei_error = 1;
@@ -680,61 +727,74 @@ void showIP(){
 
 void dataCollection(){
     printf("Data Thread is running\n");
-    while(1){
-    //Turn LED ON
-        writeData(9);
-        //delay(I2CDELAY);
-        delay(I2CDELAY);
 
-        writeData(1);
-        delay(I2CDELAY);
-        ci_sensorFront = readData();
-        if(ci_sensorFront==0 or ci_sensorFront>255){
-            ci_sensorFront = 255;
-        }
+    // while(1){
 
-        writeData(2);
-        delay(I2CDELAY);
-        ci_sensorRight = readData();
-        if(ci_sensorRight==0 or ci_sensorRight>255){
-            ci_sensorRight = 255;
-        } 
+    //     delay(I2CDELAY);
+    //     writeData(1);
+    //     delay(I2CDELAY);
+    //     ci_sensorFront = readData();
 
-        writeData(3);
-        delay(I2CDELAY);
-        ci_sensorLeft = readData();
-        if(ci_sensorLeft==0 or ci_sensorLeft>255){
-            ci_sensorLeft = 255;
-        } 
+    //     if(ci_sensorFront==0 or ci_sensorFront>255){
+    //        ci_sensorFront = 255;
+    //     }
+    //     delay(I2CDELAY);
 
-        writeData(4);
-        delay(I2CDELAY);
-        ci_sensorFill = readData();
-        if(ci_sensorFill==0 or ci_sensorFill>255){
-            ci_sensorFill = 255;
-        } 
+    //     writeData(2);
+    //     delay(I2CDELAY);
+    //     ci_sensorRight = readData();
+    //     if(ci_sensorRight==0 or ci_sensorRight>255){
+    //        ci_sensorRight = 255;
+    //     }
+    //     delay(I2CDELAY); 
 
-        // writeData(5);
-        // delay(I2CDELAY);
-        // ci_sensorVertical = readData();
-        // if(ci_sensorVertical==0 or ci_sensorVertical>255){
-        //  ci_sensorVertical = 255;
-        // } 
+    //     writeData(3);
+    //     delay(I2CDELAY);
+    //     ci_sensorLeft = readData();
+    //     if(ci_sensorLeft==0 or ci_sensorLeft>255){
+    //        ci_sensorLeft = 255;
+    //     }
+    //     delay(I2CDELAY);         
 
-        writeData(6);
-        delay(I2CDELAY);
-        ti_temp = readData();
+    //     writeData(4);
+    //     delay(I2CDELAY);
+    //     ci_sensorFill = readData();
+    //     if(ci_sensorFill==0 or ci_sensorFill>255){
+    //        ci_sensorFill = 255;
+    //     }
+    //     delay(I2CDELAY); 
 
-        //Turn LED Off
-        writeData(10);
-        delay(I2CDELAY);
-        //printHardwareValues();
-        //obstacleAvoidance();
-        if(timeFromStart(start) > runTime){
-            printf("Data has exited \n");
-            break;
-        }
-    }
+    //     // writeData(5);
+    //     // delay(I2CDELAY);
+    //     // ci_sensorVertical = readData();
+    //     // if(ci_sensorVertical==0 or ci_sensorVertical>255){
+    //     // ci_sensorVertical = 255;
+    //     // }
+    //     // delay(I2CDELAY); 
+
+    //     // writeData(6);
+    //     // delay(I2CDELAY);
+    //     // ti_temp = readData();
+    //     // delay(I2CDELAY);
+
+    //     printHardwareValues();
+    //     if(ci_sensorFill<=28){
+    //         fillSensorCount += 1;
+    //     }
+    //     else if(travelLock!=1){
+    //         fillSensorCount = 0;
+    //     }
+        
+    //     if(fillSensorCount>=5){
+    //         travelLock = 1;
+    //        obstacleAvoidance();
+    //     }
+    //     if(timeFromStart(start) > runTime){
+    //         printf("Data has exited \n");
+    //         break;
+    //     }
+    //   }
+
 }
 
 void printHardwareValues(){
@@ -750,6 +810,14 @@ void printHardwareValues(){
     //printf("%i\n",ci_sensorVertical);
     printf("Temperature value: ");
     printf("%i\n",ti_temp);
+    printf("Right Motor Forward Value: ");
+    printf("%i\n",digitalRead(PIN_RMFWD));
+    printf("Right Motor Reverse Value: ");
+    printf("%i\n",digitalRead(PIN_RMRVS));
+    printf("Left Motor Forward Value: ");
+    printf("%i\n",digitalRead(PIN_LMFWD));
+    printf("Left Motor Reverse Value: ");
+    printf("%i\n",digitalRead(PIN_LMRVS));
     printf("\n");
 }
 
