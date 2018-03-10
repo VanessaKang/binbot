@@ -49,9 +49,8 @@ int main(){
 		}//if
 
 		 // send a message
-		if (client == 0) {
-			client = write(client, "hello!", 6);
-		}
+		write(client, "hello!", 6);
+
 	}
 
 	//close connection 
