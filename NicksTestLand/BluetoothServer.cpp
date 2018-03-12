@@ -49,10 +49,6 @@ int main(){
 		}//if
 
 		 // send a message
-		int status = 0; 
-		if (status == 0) {
-			status = write(client, "hello!", 6);
-		}
 	}
 
 	//close connection 

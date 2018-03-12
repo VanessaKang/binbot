@@ -33,6 +33,7 @@ void spawn();
 void *writeToApp(void *ptr); 
 void *readFromApp(void *ptr); 
 
+
 //MAIN 
 int main() {
 	setupSocket(); 
@@ -56,11 +57,9 @@ int main() {
 		}//while(connectionStatus) 
 
 		//Handles status when connection is lost 
-		printf("MAIN: Connection Lost\n"); 
-
-		//Ensure Threads have closed  
-		pthread_join(&readThread);
-		pthread_join(&writeThread);
+		printf("MAIN: Connection Lost\n"); //Ensure Threads have closed  
+		pthread_join(readThread, NULL); 
+		pthread_join(writeThread, NULL);
 
 		//close client connection 
 		close(client);
@@ -102,20 +101,19 @@ void listen() {
 
 //Spawn Threads to handle connection read and write 
 void spawn() {
-	//TODO Create Thread for reading
+	//Create Thread for reading
 	int read_result = pthread_create(&readThread, NULL, readFromApp, NULL); 
 
 	if (read_result != 0) {
 		printf("MAIN: Read Thread Creation Failed \n"); 
 	}
 
-	//TODO Create thread for writing 
+	//Create thread for writing 
 	int write_result = pthread_create(&writeThread, NULL, writeToApp, NULL); 
 
 	if (write_result != 0) {
 		printf("MAIN: Write Thread Creation Failed \n");
-	} 
-}//spawn 
+	//pthread_join(writeThread, NULL); }//spawn 
 
 //TODO Handles periodic messaging to App and error messaging 
 
@@ -186,8 +184,7 @@ void *writeToApp(void *ptr){
 
 				//Unable to send likely to problem with socket 
 				connectionStatus = STATE_NOCONNECTION; 
-			} 
-		
+			} 		
 			//Reset Timer, t 
 			t = clock() / CLOCKS_PER_SEC;
 		}//if 
@@ -215,10 +212,11 @@ void *readFromApp(void *ptr){
 	
 			//clears byte array 
 			memset(buf, 0, sizeof(buf));  
-		}//if
+		} else {
+		 	printf("READ: failed to read\n"); 
+		} 
 	}//while
 }//readFromApp 
-
 //PSUEDOCODE
 /* 
 1. On start, set up socket and enter listen state
