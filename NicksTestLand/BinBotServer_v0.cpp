@@ -57,7 +57,9 @@ int main() {
 		}//while(connectionStatus) 
 
 		//Handles status when connection is lost 
-		printf("MAIN: Connection Lost\n"); //Ensure Threads have closed  
+		printf("MAIN: Connection Lost\n"); 
+		
+		//Ensure Threads have closed  
 		pthread_join(readThread, NULL); 
 		pthread_join(writeThread, NULL);
 
@@ -214,6 +216,7 @@ void *readFromApp(void *ptr){
 			memset(buf, 0, sizeof(buf));  
 		} else {
 		 	printf("READ: failed to read\n"); 
+			connectionStatus = STATE_NOCONNECTION; 
 		} 
 	}//while
 }//readFromApp 
