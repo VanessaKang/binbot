@@ -115,7 +115,8 @@ void spawn() {
 
 	if (write_result != 0) {
 		printf("MAIN: Write Thread Creation Failed \n");
-	//pthread_join(writeThread, NULL); }//spawn 
+	}
+}//spawn 
 
 //TODO Handles periodic messaging to App and error messaging 
 
