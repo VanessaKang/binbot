@@ -1,9 +1,0 @@
-2018-01-26 20:44:18,867 INFO     Waiting for connection on RFCOMM channel 1
-2018-01-26 20:44:52,194 ERROR    Traceback (most recent call last):
-2018-01-26 20:44:52,195 ERROR      File "raspBT.py", line 128, in <module>
-2018-01-26 20:44:52,196 ERROR    main()
-2018-01-26 20:44:52,196 ERROR      File "raspBT.py", line 96, in main
-2018-01-26 20:44:52,197 ERROR    client_sock, client_info = server_sock.accept()
-2018-01-26 20:44:52,198 ERROR      File "/usr/lib/python2.7/dist-packages/bluetooth/bluez.py", line 129, in accept
-2018-01-26 20:44:52,201 ERROR    client, addr = self._sock.accept ()
-2018-01-26 20:44:52,201 ERROR    KeyboardInterrupt
