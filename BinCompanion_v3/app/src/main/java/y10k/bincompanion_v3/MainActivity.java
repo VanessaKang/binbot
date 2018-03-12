@@ -82,8 +82,8 @@ public class MainActivity extends AppCompatActivity {
                     break;
 
                 case Constants.MSG_DECODED:
-                    String msg = resultData.getString("msg");
-                    Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+                    String recvdMsg = resultData.getString("msg");
+                    Toast.makeText(getBaseContext(), recvdMsg, Toast.LENGTH_SHORT).show(); //FOR TESTING
                     break;
 
                 case Constants.ERROR_OCCURRED:

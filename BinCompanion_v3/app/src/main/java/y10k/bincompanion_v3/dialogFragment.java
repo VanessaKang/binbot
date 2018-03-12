@@ -15,6 +15,7 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.support.v4.app.ActivityCompat;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -47,10 +48,6 @@ public class dialogFragment extends DialogFragment {
                         Manifest.permission.ACCESS_COARSE_LOCATION},
                 MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION
         );
-
-        //Register Reciever
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        getActivity().registerReceiver(mBTReceiver, filter);
     }//onCreate
 
     @Override
@@ -78,6 +75,9 @@ public class dialogFragment extends DialogFragment {
 
             //TODO: Implement Discovery Fragment
             mBluetoothAdapter.startDiscovery();
+            //Register Reciever
+            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+            getActivity().registerReceiver(mBTReceiver, filter);
         }
 
         //Create AlertDialog
@@ -106,17 +106,17 @@ public class dialogFragment extends DialogFragment {
             savedData.putString("address", deviceAddress);
             mReceiver.send(Constants.OBTAINED_ADDRESS, savedData);
 
-            //Close Dialog WIndowy565y
+            //Close Dialog Window
             dismiss();
         }//onItemClick
     };
 
-    private final BroadcastReceiver mBTReceiver = new BroadcastReceiver() {
+    final BroadcastReceiver mBTReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+
                 // Discovery has found a device
-                Toast.makeText(getActivity(), "FOUND", Toast.LENGTH_SHORT).show();
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 String deviceName = device.getName();
                 String deviceAddress = device.getAddress();

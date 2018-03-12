@@ -32,7 +32,6 @@ void listen();
 void spawn();
 void *writeToApp(void *ptr); 
 void *readFromApp(void *ptr); 
-void close(); 
 
 //MAIN 
 int main() {
@@ -59,7 +58,12 @@ int main() {
 		//Handles status when connection is lost 
 		printf("MAIN: Connection Lost\n"); 
 
-		close();  
+		//Ensure Threads have closed  
+		pthread_join(&readThread);
+		pthread_join(&writeThread);
+
+		//close client connection 
+		close(client);
 	}//while 
 }//main 
 
@@ -88,7 +92,9 @@ void listen() {
 	//Print connection success 
 	ba2str(&rem_addr.rc_bdaddr, buf); 
 	printf("MAIN: accepted connection from %s\n", buf); 
-	memset(buf, 0, sizeof(buf)); //clears byte array 
+
+	//clears byte array 
+	memset(buf, 0, sizeof(buf)); 
 	
 	//Alter connection status to display succcess 
 	connectionStatus = STATE_CONNECTED; 
@@ -109,9 +115,6 @@ void spawn() {
 	if (write_result != 0) {
 		printf("MAIN: Write Thread Creation Failed \n");
 	} 
-
-	//pthread_join(readThread, NULL); 
-	//pthread_join(writeThread, NULL); 
 }//spawn 
 
 //TODO Handles periodic messaging to App and error messaging 
@@ -125,45 +128,71 @@ void *writeToApp(void *ptr){
 		//Set timer, new_t to compare timer, twith 
 		new_t = clock() / CLOCKS_PER_SEC; 
 
-		//Braodcast a message every # seconds 
+		//Broadcast a message every # seconds 
 		if (new_t - t > 5) {
 
-			//Create udpate code to pass to the App 
+			//Create update code to pass to the App 
 			/* 
+			#define MODE 0 
+			#define FILL 1
+			#define BATT 2 
+			#define SIG  3 
+
+			#define UPDATE_SIZE 4
+
+			char [] updateMsg = new char[UPDATE_SIZE]
+
+				1st - mode          
+				2nd - battery
+				3rd - fill 
+				4th - signal
+			
 			switch(ei_state){ 
 				case ERRORSTATE:
-					updateMsg += 10;
+					updateMsg[MODE] = ERRORSTATE;
 					break; 
 				case TRAVELSTATE: 
-					updateMsg += 20;
+					updateMsg[MODE] = TRAVELSTATE;
 					break; 
 				case COLLECTIONSTATE: 
-					updateMsg += 30;
+					updateMsg[MODE] = COLLECTIONSTATE; 
 					break; 
 				case DISPOSALSTATE: 
-					updateMsg += 40;
-					break; 
-				default:
-					updateMsg += 50;
+					updateMsg[MODE] = DISPOSALSTATE; 
 					break; 
 			} 
 			
 			switch(ed_fillLevel){
-				default: 
+				case FILL_FULL: 
+					updateMsg[FILL] = FILL_FULL;
+					break; 
+				case FILL_PARTIAL: 
+					updateMsg[FILL] = FILL_PARTIAL;
+					break; 
+				case FILL_NEAR_EMPTY: 
+					updateMsg[FILL] = FILL_NEAR_EMPTY;
+					break; 
+				case FILL_EMPTY: 
+					updateMsg[FILL] = FILL_EMPTY;
 					break; 
 			} 
 			*/
 			//TODO Write to BinCompanion every time period status of relevent variables 
 			int bytes_wrote = write(client, "Hello", 5); 
-			if (bytes_wrote > 0) {
+			if (bytes_wrote >= 0) {
 				printf("WRITE: wrote successfully\n"); 
-			}
+			} else { 
+				printf("WRITE: unable to write\n"); 
+
+				//Unable to send likely to problem with socket 
+				connectionStatus = STATE_NOCONNECTION; 
+			} 
 		
 			//Reset Timer, t 
 			t = clock() / CLOCKS_PER_SEC;
 		}//if 
 	}//while 
-}//wirteToApp 
+}//writeToApp 
 
 //TODO Handles reading commands from the app 
 void *readFromApp(void *ptr){
@@ -173,7 +202,13 @@ void *readFromApp(void *ptr){
 		if (bytes_read > 0) {
 			printf("READ: received %s\n", buf);
 
-			//Compare buf to strings to perfrom actions 
+			//TODO:Compare buf to strings to perfrom actions 
+			if (strcmp(buf, "call") == 0) {}
+			if (strcmp(buf, "return") == 0) {}
+			if (strcmp(buf, "resume") == 0) {}
+			if (strcmp(buf, "stop") == 0) {}
+			if (strcmp(buf, "shutdown") == 0) {}
+
 			if(strcmp(buf, "disconnect") == 0){
 				connectionStatus = STATE_NOCONNECTION;
 			}
@@ -183,18 +218,6 @@ void *readFromApp(void *ptr){
 		}//if
 	}//while
 }//readFromApp 
-
-//Close the connection and cancel threads 
-void close(){ 
-	//close Threads 
-	pthread_exit(&readThread);
-	pthread_exit(&writeThread); 
-
-	//close connection 
-	close(client);
-	close(sock);
-}
-
 
 //PSUEDOCODE
 /* 

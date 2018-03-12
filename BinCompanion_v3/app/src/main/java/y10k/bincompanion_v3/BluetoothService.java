@@ -16,10 +16,12 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.ResultReceiver;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 
 public class BluetoothService extends Service {
     //Variable Declaration =========================================================================
@@ -41,13 +43,20 @@ public class BluetoothService extends Service {
     }//LocalBinder
 
     //To handle messages received by the client
-    private final Handler mHandler = new Handler(Looper.getMainLooper()){
+    private Handler mHandler = new Handler(){
         @Override
-        public void handleMessage(Message msg) {
-            //TODO
+        public void handleMessage(Message msg) {             //TODO
             switch(msg.what) {
                 case Constants.MESSAGE_READ:
-                    savedData.putString("msg", msg.obj.toString());//FOR TESTING
+                    String readMessage = null;
+
+                    try {
+                        readMessage = new String((byte[]) msg.obj, "UTF-8");
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+
+                    savedData.putString("msg", readMessage);
                     mReceiver.send(Constants.MSG_DECODED, savedData);
                     break;
                 default:
@@ -152,6 +161,7 @@ public class BluetoothService extends Service {
 
     public void manageConnection (BluetoothSocket socket) {
         mConnectedThread = new ConnectedThread((socket));
+        mConnectedThread.start();
         mConnectionStatus = Constants.STATE_CONNECTED;
 
         savedData.putInt("state", Constants.STATE_CONNECTED);
@@ -288,7 +298,6 @@ public class BluetoothService extends Service {
         private final BluetoothSocket mSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
-        private byte[] mBuffer;
 
         public ConnectedThread (BluetoothSocket socket) {
             mSocket = socket;
@@ -317,22 +326,24 @@ public class BluetoothService extends Service {
         }//ConnectedThread
 
         public void run() {
-            mBuffer = new byte[1024];
+            byte[] mBuffer = new byte[1024];
             int numBytes;
 
-            while(true){
+            while(mConnectionStatus == Constants.STATE_CONNECTED){
                 try {
+                    Log.i(TAG, "Reading...");
                     numBytes = mmInStream.read(mBuffer);
-                    Message readMsg = mHandler.obtainMessage(Constants.MESSAGE_READ, numBytes, -1, mBuffer);
-                    readMsg.sendToTarget();
+                    mHandler.obtainMessage(Constants.MESSAGE_READ, numBytes, -1, mBuffer)
+                                .sendToTarget();
+
+                    //TODO: Periodic check of open connection
                 }catch (IOException e){
                     Log.e(TAG, "Failed to Read",e);
-
-                    //Signal Connection Disconnection
-                    disconnect();
+                    connection_failed(); //Signal Connection Disconnection
                     break;
                 }//try/catch
             }//while
+            disconnect();
         }//run
 
         public void write(byte[] bytes) {
