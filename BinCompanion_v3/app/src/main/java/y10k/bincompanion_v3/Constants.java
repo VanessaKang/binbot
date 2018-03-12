@@ -14,6 +14,7 @@ public final class Constants {
     static final int STATE_CHANGE = 6;
     static final int OBTAINED_ADDRESS = 7;
     static final int ERROR_OCCURRED = 8;
+    static final int MSG_DECODED = 9;
 
     // Connection Status
     static final int STATE_NOT_CONNECTED = 10;
