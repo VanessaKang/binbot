@@ -22,10 +22,34 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.UUID;
 
 public class BluetoothService extends Service {
-    //Variable Declaration =========================================================================
-    private int mConnectionStatus = Constants.STATE_NOT_CONNECTED;
+    //CONSTANTS DECLARATION
+    static final String SERVICE_NAME = "BinBrothers";
+    static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); //default pi UUID
+
+    //Handler Messages
+    static final int MESSAGE_READ = 5;
+
+    //Result Receiver Codes
+    static final int STATE_CHANGE = 6;
+    static final int OBTAINED_ADDRESS = 7;
+    static final int ERROR_OCCURRED = 8;
+    static final int UPDATE = 9;
+
+    // Connection Status
+    static final int STATE_NOT_CONNECTED = 10;
+    static final int STATE_CONNECTING = 11; //to be used for client
+    static final int STATE_LISTEN = 12;  //to be used for server
+    static final int STATE_CONNECTED = 13;
+    static final int STATE_DISCONNECTED = 14;
+    static final int STATE_FAILED = 15;
+
+    //VARIABLE DECLARATION
+
+
+    private int mConnectionStatus = STATE_NOT_CONNECTED;
 
     private ResultReceiver mReceiver = null;
     private Bundle savedData;
@@ -43,11 +67,11 @@ public class BluetoothService extends Service {
     }//LocalBinder
 
     //To handle messages received by the client
-    private Handler mHandler = new Handler(){
+    private Handler mHandler = new Handler(getMainLooper()){
         @Override
         public void handleMessage(Message msg) {             //TODO
             switch(msg.what) {
-                case Constants.MESSAGE_READ:
+                case MESSAGE_READ:
                     String readMessage = null;
 
                     try {
@@ -57,7 +81,7 @@ public class BluetoothService extends Service {
                     }
 
                     savedData.putString("msg", readMessage);
-                    mReceiver.send(Constants.MSG_DECODED, savedData);
+                    mReceiver.send(UPDATE, savedData);
                     break;
                 default:
                     super.handleMessage(msg);
@@ -100,9 +124,9 @@ public class BluetoothService extends Service {
         }
 
         //SIgnal Connection Disconnection
-        mConnectionStatus = Constants.STATE_DISCONNECTED;
-        savedData.putInt("state", Constants.STATE_DISCONNECTED);
-        mReceiver.send(Constants.STATE_CHANGE, savedData);
+        mConnectionStatus = STATE_DISCONNECTED;
+        savedData.putInt("state", STATE_DISCONNECTED);
+        mReceiver.send(STATE_CHANGE, savedData);
 
         //Create thread te manage listening for devices
         mAcceptThread = new AcceptThread();
@@ -123,9 +147,9 @@ public class BluetoothService extends Service {
         }
 
         //Signal Connection Disconnection
-        mConnectionStatus = Constants.STATE_DISCONNECTED;
-        savedData.putInt("state", Constants.STATE_DISCONNECTED);
-        mReceiver.send(Constants.STATE_CHANGE, savedData);
+        mConnectionStatus = STATE_DISCONNECTED;
+        savedData.putInt("state", STATE_DISCONNECTED);
+        mReceiver.send(STATE_CHANGE, savedData);
 
         //Create Thread to execute Connection
         mConnectThread = new ConnectThread(device);
@@ -133,8 +157,6 @@ public class BluetoothService extends Service {
     }//connect
 
     public void disconnect(){
-        //Message to inform of disconnection
-        write(Constants.DISCONNECT);
         //Cancel listening threads
         if(mAcceptThread != null) {
             mAcceptThread.cancel();
@@ -154,31 +176,31 @@ public class BluetoothService extends Service {
         }
 
         //Signal Connection Disconnection
-        mConnectionStatus = Constants.STATE_DISCONNECTED;
-        savedData.putInt("state", Constants.STATE_DISCONNECTED);
-        mReceiver.send(Constants.STATE_CHANGE, savedData);
+        mConnectionStatus = STATE_DISCONNECTED;
+        savedData.putInt("state", STATE_DISCONNECTED);
+        mReceiver.send(STATE_CHANGE, savedData);
     }
 
     public void manageConnection (BluetoothSocket socket) {
         mConnectedThread = new ConnectedThread((socket));
         mConnectedThread.start();
-        mConnectionStatus = Constants.STATE_CONNECTED;
+        mConnectionStatus = STATE_CONNECTED;
 
-        savedData.putInt("state", Constants.STATE_CONNECTED);
-        mReceiver.send(Constants.STATE_CHANGE, savedData);
+        savedData.putInt("state", STATE_CONNECTED);
+        mReceiver.send(STATE_CHANGE, savedData);
    }//manageSocket
 
     public void write(String command){
         //Convert string command into bytes to be sent to Raspberry Pi
-        if(mConnectionStatus == Constants.STATE_CONNECTED) {
+        if(mConnectionStatus == STATE_CONNECTED) {
             mConnectedThread.write(command.getBytes());
         }
     }//write
 
     public void connection_failed(){
-        mConnectionStatus = Constants.STATE_FAILED;
-        savedData.putInt("state", Constants.STATE_FAILED);
-        mReceiver.send(Constants.STATE_CHANGE, savedData);
+        mConnectionStatus = STATE_FAILED;
+        savedData.putInt("state", STATE_FAILED);
+        mReceiver.send(STATE_CHANGE, savedData);
     }//connection failed
    // ==============================================================================================
     //Server Side Implementation
@@ -189,8 +211,8 @@ public class BluetoothService extends Service {
             BluetoothServerSocket tmp = null;
             try {
                 tmp = mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(
-                        Constants.SERVICE_NAME,
-                        Constants.MY_UUID);
+                        SERVICE_NAME,
+                        MY_UUID);
             } catch (IOException e) {
                 Log.e(TAG, "Socket Listen Failed", e);
             }
@@ -198,9 +220,9 @@ public class BluetoothService extends Service {
             mmServerSocket = tmp;
 
             //Change Connection State to listening
-            mConnectionStatus = Constants.STATE_LISTEN;
-            savedData.putInt("state", Constants.STATE_LISTEN);
-            mReceiver.send(Constants.STATE_CHANGE, savedData);
+            mConnectionStatus = STATE_LISTEN;
+            savedData.putInt("state", STATE_LISTEN);
+            mReceiver.send(STATE_CHANGE, savedData);
         }//AcceptThread
 
         public  void run() {
@@ -231,9 +253,9 @@ public class BluetoothService extends Service {
                 mmServerSocket.close();
 
                 //Signal Connection Disconnection
-                mConnectionStatus = Constants.STATE_DISCONNECTED;
-                savedData.putInt("state", Constants.STATE_DISCONNECTED);
-                mReceiver.send(Constants.STATE_CHANGE, savedData);
+                mConnectionStatus = STATE_DISCONNECTED;
+                savedData.putInt("state", STATE_DISCONNECTED);
+                mReceiver.send(STATE_CHANGE, savedData);
             } catch (IOException e) {
                 Log.e(TAG, "Could not close the connect socket", e);
             }
@@ -249,17 +271,17 @@ public class BluetoothService extends Service {
             mmDevice = device;
 
             try {
-                tmp = device.createInsecureRfcommSocketToServiceRecord(Constants.MY_UUID);
-                //tmp = device.createRfcommSocketToServiceRecord(Constants.MY_UUID);
+                tmp = device.createInsecureRfcommSocketToServiceRecord(MY_UUID);
+                //tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
             } catch (IOException e) {
                 Log.e(TAG, "Could not create socket", e);
             }
             mmSocket = tmp;
 
             //Change Connection State to Connecting
-            mConnectionStatus = Constants.STATE_CONNECTING;
-            savedData.putInt("state", Constants.STATE_CONNECTING);
-            mReceiver.send(Constants.STATE_CHANGE, savedData);
+            mConnectionStatus = STATE_CONNECTING;
+            savedData.putInt("state", STATE_CONNECTING);
+            mReceiver.send(STATE_CHANGE, savedData);
         }//ConnectThread
 
         public void run(){
@@ -285,9 +307,9 @@ public class BluetoothService extends Service {
                 mmSocket.close();
 
                 //Signal Connection Disconnection
-                mConnectionStatus = Constants.STATE_DISCONNECTED;
-                savedData.putInt("state", Constants.STATE_DISCONNECTED);
-                mReceiver.send(Constants.STATE_CHANGE, savedData);
+                mConnectionStatus = STATE_DISCONNECTED;
+                savedData.putInt("state", STATE_DISCONNECTED);
+                mReceiver.send(STATE_CHANGE, savedData);
             } catch (IOException e){
                 Log.e(TAG, "Could not close", e);
             }//try/catch
@@ -317,9 +339,9 @@ public class BluetoothService extends Service {
             }
 
             //Change Connection State to Connected
-            mConnectionStatus = Constants.STATE_CONNECTED;
-            savedData.putInt("state", Constants.STATE_CONNECTED);
-            mReceiver.send(Constants.STATE_CHANGE, savedData);
+            mConnectionStatus = STATE_CONNECTED;
+            savedData.putInt("state", STATE_CONNECTED);
+            mReceiver.send(STATE_CHANGE, savedData);
 
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
@@ -329,14 +351,12 @@ public class BluetoothService extends Service {
             byte[] mBuffer = new byte[1024];
             int numBytes;
 
-            while(mConnectionStatus == Constants.STATE_CONNECTED){
+            while(mConnectionStatus == STATE_CONNECTED){
                 try {
                     Log.i(TAG, "Reading...");
                     numBytes = mmInStream.read(mBuffer);
-                    mHandler.obtainMessage(Constants.MESSAGE_READ, numBytes, -1, mBuffer)
+                    mHandler.obtainMessage(MESSAGE_READ, numBytes, -1, mBuffer)
                                 .sendToTarget();
-
-                    //TODO: Periodic check of open connection
                 }catch (IOException e){
                     Log.e(TAG, "Failed to Read",e);
                     connection_failed(); //Signal Connection Disconnection
@@ -359,9 +379,9 @@ public class BluetoothService extends Service {
                 mSocket.close();
 
                 //Signal Connection Disconnection
-                mConnectionStatus = Constants.STATE_DISCONNECTED;
-                savedData.putInt("state", Constants.STATE_DISCONNECTED);
-                mReceiver.send(Constants.STATE_CHANGE, savedData);
+                mConnectionStatus = STATE_DISCONNECTED;
+                savedData.putInt("state", STATE_DISCONNECTED);
+                mReceiver.send(STATE_CHANGE, savedData);
             } catch (IOException e) {
                 Log.e(TAG, "Failed to close socket", e);
             }//try/catch

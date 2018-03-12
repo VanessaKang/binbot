@@ -25,6 +25,13 @@ import android.widget.Toast;
 import java.util.Set;
 
 public class dialogFragment extends DialogFragment {
+    //CONSTANTS DECLARATION
+
+    //Result Receiver Code
+    static final int OBTAINED_ADDRESS = 7;
+
+    //VARIABLE DECLARATION
+
     private int dialogType; //1 - Paired, 2 - Discovered
     private int dialogTitle;
     private ResultReceiver mReceiver;
@@ -104,7 +111,7 @@ public class dialogFragment extends DialogFragment {
             //Send deviceAddress to MainActivity
             Bundle savedData = new Bundle();
             savedData.putString("address", deviceAddress);
-            mReceiver.send(Constants.OBTAINED_ADDRESS, savedData);
+            mReceiver.send(OBTAINED_ADDRESS, savedData);
 
             //Close Dialog Window
             dismiss();

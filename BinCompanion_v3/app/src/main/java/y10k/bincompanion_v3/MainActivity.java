@@ -8,48 +8,79 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.ResultReceiver;
-import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ListView;
-import android.widget.PopupMenu;
-import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.Set;
-
 public class MainActivity extends AppCompatActivity {
-    //Variable Declaration
+    //CONSTANTS DECLARATION
+
+    //Result Receiver Codes
+    static final int STATE_CHANGE = 6;
+    static final int OBTAINED_ADDRESS = 7;
+    static final int ERROR_OCCURRED = 8;
+    static final int UPDATE = 9;
+
+    // Connection Status
+    static final int STATE_NOT_CONNECTED = 10;
+    static final int STATE_CONNECTING = 11; //to be used for client
+    static final int STATE_LISTEN = 12;  //to be used for server
+    static final int STATE_CONNECTED = 13;
+    static final int STATE_DISCONNECTED = 14;
+    static final int STATE_FAILED = 15;
+
+    //State Identifiers
+    static final int COLLECTION = 20;
+    static final int DISPOSAL = 21;
+    static final int TRAVEL = 22;
+    static final int ERROR = 23;
+
+    //Fill Level Identifiers
+    static final int FILL_FULL = 30;
+    static final int FILL_NEARFULL = 31;
+    static final int FILL_PARTIAL = 32;
+    static final int FILL_EMPTY = 33;
+
+    //Battery Level Identifiers
+    static final int BATTERY_HIGH = 40;
+    static final int BATTERY_MEDIUM = 41;
+    static final int BATTERY_LOW = 42;
+
+    //Signal Strength Identifiers
+    static final int SIGNAL_STRONG = 50;
+    static final int SIGNAL_OKAY = 51;
+    static final int SIGNAL_WEAK = 52;
+
+    // Command Strings
+    static final String CALL = "call";
+    static final String RETURN = "return";
+    static final String STOP = "stop";
+    static final String RESUME = "resume";
+    static final String SHUTDOWN = "shutdown";
+    static final String DISCONNECT = "disconnect";
+
+    //VARIABLE DECLARATION
     private TextView mConnect;
     private TextView mState;
     private TextView mBattery;
     private TextView mFill;
     private TextView mRSSI;
 
-
-    private int mConnectionStatus = Constants.STATE_NOT_CONNECTED;
-    private int mModeStatus = Constants.STATE_NOT_CONNECTED;
-    private int mBatteryStatus = Constants.STATE_NOT_CONNECTED;
-    private int mFillStatus = Constants.STATE_NOT_CONNECTED;
-    private int mSignalStatus = Constants.STATE_NOT_CONNECTED;
+    private int mConnectionStatus = STATE_NOT_CONNECTED;
+    private int mModeStatus = STATE_NOT_CONNECTED;
+    private int mBatteryStatus = STATE_NOT_CONNECTED;
+    private int mFillStatus = STATE_NOT_CONNECTED;
+    private int mSignalStatus = STATE_NOT_CONNECTED;
 
     protected BluetoothAdapter mBluetoothAdapter;
 
@@ -63,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onReceiveResult(int resultCode, Bundle resultData) {
             switch (resultCode){
-                case Constants.STATE_CHANGE:
+                case STATE_CHANGE:
                     mConnectionStatus = resultData.getInt("state");
 
                     //Ensure that UI is updated only on the main thread
@@ -75,18 +106,18 @@ public class MainActivity extends AppCompatActivity {
                     });
                     break;
 
-                case Constants.OBTAINED_ADDRESS:
+                case OBTAINED_ADDRESS:
                     String deviceAddress = resultData.getString("address");
                     BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(deviceAddress);
                     mService.connect(device);
                     break;
 
-                case Constants.MSG_DECODED:
+                case UPDATE:
                     String recvdMsg = resultData.getString("msg");
                     Toast.makeText(getBaseContext(), recvdMsg, Toast.LENGTH_SHORT).show(); //FOR TESTING
                     break;
 
-                case Constants.ERROR_OCCURRED:
+                case ERROR_OCCURRED:
                     //TODO
                     break;
 
@@ -198,6 +229,8 @@ public class MainActivity extends AppCompatActivity {
                 mService.listen();
                 break;
             case R.id.action_disconnect:
+                //Message to inform of disconnection
+                mService.write(DISCONNECT);
                 mService.disconnect();
                 break;
         }
@@ -209,19 +242,19 @@ public class MainActivity extends AppCompatActivity {
         //TODO: Finish Switch Statements
         //Connection Field
         switch (mConnectionStatus){
-            case Constants.STATE_CONNECTED:
+            case STATE_CONNECTED:
                 mConnect.setText(R.string.connected);
                 break;
-            case  Constants.STATE_CONNECTING:
+            case STATE_CONNECTING:
                 mConnect.setText(R.string.connecting);
                 break;
-            case Constants.STATE_LISTEN:
+            case STATE_LISTEN:
                 mConnect.setText(R.string.listening);
                 break;
-            case Constants.STATE_FAILED:
+            case STATE_FAILED:
                 mConnect.setText(R.string.failed);
                 break;
-            case Constants.STATE_DISCONNECTED:
+            case STATE_DISCONNECTED:
                 mConnect.setText(R.string.disconnected);
                 break;
             default:
@@ -231,16 +264,16 @@ public class MainActivity extends AppCompatActivity {
 
         //Mode Field
         switch (mModeStatus){
-            case Constants.COLLECTION:
+            case COLLECTION:
                 mState.setText(R.string.collection);
                 break;
-            case  Constants.DISPOSAL:
+            case DISPOSAL:
                 mState.setText(R.string.disposal);
                 break;
-            case Constants.TRAVEL:
+            case TRAVEL:
                 mState.setText(R.string.travel);
                 break;
-            case Constants.ERROR:
+            case ERROR:
                 mState.setText(R.string.error);
                 break;
             default:
@@ -251,11 +284,11 @@ public class MainActivity extends AppCompatActivity {
         //Battery Field
         //TODO
         switch (mBatteryStatus){
-            case Constants.BATTERY_HIGH:
+            case BATTERY_HIGH:
                 break;
-            case Constants.BATTERY_MEDIUM:
+            case BATTERY_MEDIUM:
                 break;
-            case Constants.BATTERY_LOW:
+            case BATTERY_LOW:
                 break;
             default:
                 //mBattery.setText(R.string.notconnected);
@@ -266,13 +299,13 @@ public class MainActivity extends AppCompatActivity {
         //Fill Field
         //TODO
         switch (mFillStatus){
-            case Constants.FILL_FULL:
+            case FILL_FULL:
                 break;
-            case Constants.FILL_NEARFULL:
+            case FILL_NEARFULL:
                 break;
-            case Constants.FILL_PARTIAL:
+            case FILL_PARTIAL:
                 break;
-            case Constants.FILL_EMPTY:
+            case FILL_EMPTY:
                 break;
             default:
                 mFill.setText(R.string.notconnected);
@@ -282,11 +315,11 @@ public class MainActivity extends AppCompatActivity {
         //Signal Field
         //TODO
         switch (mSignalStatus){
-            case Constants.SIGNAL_STRONG:
+            case SIGNAL_STRONG:
                 break;
-            case Constants.SIGNAL_OKAY:
+            case SIGNAL_OKAY:
                 break;
-            case Constants.SIGNAL_WEAK:
+            case SIGNAL_WEAK:
                 break;
             default:
                 //mRSSI.setText(R.string.notconnected);
@@ -297,15 +330,15 @@ public class MainActivity extends AppCompatActivity {
 
     //Send a command call to BinBot
     public void callCommand (View view) {
-        if(mConnectionStatus == Constants.STATE_CONNECTED) {
-            mService.write(Constants.CALL);
+        if(mConnectionStatus == STATE_CONNECTED) {
+            mService.write(CALL);
         }
     }//callCommand
 
     //Send resume command to BinBot
     public void resumeCommand (View view) {
-        if(mConnectionStatus == Constants.STATE_CONNECTED) {
-            mService.write(Constants.RESUME);
+        if(mConnectionStatus == STATE_CONNECTED) {
+            mService.write(RESUME);
 
             Button resume = (Button) view;
             Button stop = findViewById(R.id.stop_button);
@@ -320,8 +353,8 @@ public class MainActivity extends AppCompatActivity {
 
     //Send Stop command to BinBot
     public void stopCommand (View view) {
-        if (mConnectionStatus == Constants.STATE_CONNECTED) {
-            mService.write(Constants.STOP);
+        if (mConnectionStatus == STATE_CONNECTED) {
+            mService.write(STOP);
 
             Button stop = (Button) view;
             Button resume = findViewById(R.id.resume_button);
@@ -336,15 +369,15 @@ public class MainActivity extends AppCompatActivity {
 
     //Send shutdown command to BinBot
     public void shutdownCommand (View view) {
-        if(mConnectionStatus == Constants.STATE_CONNECTED) {
-            mService.write(Constants.SHUTDOWN);
+        if(mConnectionStatus == STATE_CONNECTED) {
+            mService.write(SHUTDOWN);
         }
     }//shutdownCommand
 
     //Send return command to BinBot
     public void returnCommand (View view) {
-        if(mConnectionStatus == Constants.STATE_CONNECTED) {
-            mService.write(Constants.RETURN);
+        if(mConnectionStatus == STATE_CONNECTED) {
+            mService.write(RETURN);
         }
     }//returnCommand
 }

@@ -5,11 +5,11 @@
 #include <bluetooth/bluetooth.h> 
 #include <bluetooth/rfcomm.h> 
 #include <string.h>
-
 #include <pthread.h> 
 #include <time.h> 
 
 //CONSTANT DECLARTION 
+//TODO change macros to const 
 #define STATE_NOCONNECTION 0 
 #define STATE_CONNECTED 1 
 
@@ -26,13 +26,17 @@ char address[18] = "B8:27:EB:98:DA:8B"; //Address of the pi NOTE: Must change fo
 pthread_t readThread, writeThread; 
 clock_t t, new_t; 
 
+//FOR TESTING//////////////////
+int ei_state = 1; 
+int ed_fillLevel = 1; 
+///////////////////////////////
+
 //FUNCTION DECLARATION 
 void setupSocket(); 
 void listen(); 
 void spawn();
 void *writeToApp(void *ptr); 
 void *readFromApp(void *ptr); 
-
 
 //MAIN 
 int main() {
@@ -118,11 +122,28 @@ void spawn() {
 	}
 }//spawn 
 
-//TODO Handles periodic messaging to App and error messaging 
-
+ //TODO Handles periodic messaging to App and error messaging
 void *writeToApp(void *ptr){
-	//Initialize timer,t for first broadcast 
+	//CONSTANTS DECLARATION 
+	//TODO change macros to const 
+	#define MODE 0 
+	#define FILL 1
+	#define BATT 2 
+	#define SIG  3
+	#define UPDATE_SIZE 4
 
+	#define ERRORSTATE 0 
+	#define TRAVELSTATE 1
+	#define COLLECTIONSTATE 2
+	#define DISPOSALSTATE 3
+
+	#define FILL_FULL 0; 
+	#define FILL_PARTIAL 1; 
+	#define FILL_NEAR_EMPTY 2; 
+	#define FILL_EMPTY 3; 
+
+
+	//Initialize timer,t for first broadcast 
 	t = clock() / CLOCKS_PER_SEC;
 
 	while (connectionStatus == STATE_CONNECTED) {
@@ -133,20 +154,7 @@ void *writeToApp(void *ptr){
 		if (new_t - t > 5) {
 
 			//Create update code to pass to the App 
-			/* 
-			#define MODE 0 
-			#define FILL 1
-			#define BATT 2 
-			#define SIG  3 
-
-			#define UPDATE_SIZE 4
-
-			char [] updateMsg = new char[UPDATE_SIZE]
-
-				1st - mode          
-				2nd - battery
-				3rd - fill 
-				4th - signal
+			int[] updateMsg = new int[UPDATE_SIZE]; 
 			
 			switch(ei_state){ 
 				case ERRORSTATE:
@@ -179,7 +187,7 @@ void *writeToApp(void *ptr){
 			} 
 			*/
 			//TODO Write to BinCompanion every time period status of relevent variables 
-			int bytes_wrote = write(client, "Hello", 5); 
+			int bytes_wrote = write(client, updateMsg, sizeof(int)*UPDATE_SIZE); 
 			if (bytes_wrote >= 0) {
 				printf("WRITE: wrote successfully\n"); 
 			} else { 
