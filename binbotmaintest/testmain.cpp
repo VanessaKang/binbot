@@ -79,11 +79,11 @@ double timeFromStart(auto y);
 // Define Constants used in code **** Needs to be edited
 //BIN SENSOR CONSTANTS
 #define BINFULLDIST 5
-#define BINEMPTYDIST 30
+#define BINEMPTYDIST 25
 #define FTHRESH 40
 #define LRTHRESH 25
 #define ALLOWEDMOVES 10
-#define ATDESTRSSI -40
+#define ATDESTRSSI -44
 
 
 //State Constants
@@ -91,6 +91,10 @@ double timeFromStart(auto y);
 #define TRAVELSTATE 1
 #define COLLECTIONSTATE 2
 #define DISPOSALSTATE 3
+
+//nextDest Constants
+#define COLLECTION 0
+#define DISPOSAL 1
 
 //USER COMMAND
 #define NO_COMMAND 0
@@ -108,7 +112,7 @@ unsigned char ultraVal;
 
 
 //declare global variables------------------------------------------------------------
-int ei_state=1;
+int ei_state= TRAVELSTATE;
 double ed_fillLevel;
 double vd_battVoltage;
 int ei_error=0;
@@ -116,8 +120,10 @@ int ei_error=0;
 //string es_statusString;
 //string es_commandString;
 bool eb_destReached;
-bool eb_nextDest;
+bool eb_nextDest= COLLECTION;
 bool eb_lineFollow = 0;
+bool eb_binFilled = 0;
+bool eb_binEmptied = 0;
 int ei_prevState = 0;
 double md_botLocation;
 int ti_temp;
@@ -127,7 +133,7 @@ double ed_beaconRssi = -70;
 int ci_sensorLeft;
 int ci_sensorFront;
 int ci_sensorRight;
-int ci_sensorFill;
+int ci_sensorFill = 15;
 int ci_sensorVertical;
 
 // New proposed variables from Component document
@@ -190,8 +196,6 @@ pthread_join( thread1, NULL);
 pthread_join( thread4, NULL);
 
 //print to console to confirm program has finished
-allStop();
-writeData(10);
 std::cout << "\n";
 std::cout << "Program Ended";
 std::cout << "\n";
@@ -227,7 +231,7 @@ void *FSM(void *ptr){
                 if(ei_prevState != 1){
 		    
                 }
-		printf("entering travel");
+		printf("entering travel \n");
 		travel();
                 
                 ei_prevState = 1;
@@ -287,13 +291,26 @@ void *errorDiag(void *ptr){
 }
 
 void *Data(void *ptr){
-	if(eb_lineFollow == 1){
-    		writeData(19);
-		
-	}
-	else if(eb_lineFollow == 0){
-		writeData(20);
-	}
+    while(1){
+    	if(eb_lineFollow == TRUE && ei_state == TRAVELSTATE){
+                //printf("linefollowing \n");
+        		writeData(19);
+    	}
+    	else if(eb_lineFollow == FALSE && ei_state == TRAVELSTATE){
+            //printf("stopping \n");
+    		writeData(20);
+    	}
+        if(ei_state == COLLECTIONSTATE || ei_state == DISPOSALSTATE){
+            writeData(4);
+            delay(I2CDELAY);
+            //ci_sensorFill = readData();
+            if(ci_sensorFill==0 or ci_sensorFill>255){
+                ci_sensorFill = 255;
+            }
+            printf("SensorFill: %i \n",ci_sensorFill);
+        }
+        
+    }
 }
 
 //*********************** Supporting Functions ********************************//
@@ -350,67 +367,6 @@ void writeData(int val){
     }
 }
 
-void rightMotorForward(){
-    //writeData(11);
-    //delay(I2CDELAY);
-    digitalWrite(PIN_RMFWD,HIGH);
-    digitalWrite(PIN_RMRVS,LOW);
-}
-
-void rightMotorReverse(){
-    //writeData(12);
-    //delay(I2CDELAY);
-    digitalWrite(PIN_RMRVS,HIGH);
-    digitalWrite(PIN_RMFWD,LOW);
-}
-
-void leftMotorForward(){
-    //writeData(14);
-    //delay(I2CDELAY);
-    digitalWrite(PIN_LMFWD,HIGH);
-    digitalWrite(PIN_LMRVS,LOW);
-}
-
-void leftMotorReverse(){
-    //writeData(15);
-    //delay(I2CDELAY);
-    digitalWrite(PIN_LMRVS,HIGH);
-    digitalWrite(PIN_LMFWD,LOW);
-}
-
-void rightMotorStop(){
-    //writeData(13);
-    //delay(I2CDELAY);
-    digitalWrite(PIN_RMRVS,LOW);
-    digitalWrite(PIN_RMFWD,LOW);
-}
-
-void leftMotorStop(){
-    //writeData(16);
-    //delay(I2CDELAY);
-    digitalWrite(PIN_LMFWD,LOW);
-    digitalWrite(PIN_LMRVS,LOW);
-}
-
-void moveForward(){
-    rightMotorForward();
-    leftMotorForward();
-}
-
-void allStop(){
-    rightMotorStop();
-    leftMotorStop();
-}
-
-void adjustAnglePositive(){
-    rightMotorForward();
-    leftMotorReverse();
-}
-
-void adjustAngleNegative(){
-    rightMotorReverse();
-    leftMotorForward();
-}
 
 void errorState(){
     printf("Error State\n");
@@ -418,7 +374,7 @@ void errorState(){
 
 void travel(){
     printf("in the travel state \n");
-    eb_lineFollow = 1;
+    eb_lineFollow = TRUE;
     while (ei_userCommand == NO_COMMAND && ei_error == 0)
     {	
 	std::string str1 (" 0");
@@ -439,6 +395,10 @@ void travel(){
 		values.push_back(thisVal);
 	}
 	beaconFile.close();
+    //std::cout << values.size() << "\n";
+    if(values.size() == 0){     //protects against seg faults by trying to access
+        break;                  //an empty array
+    }
 
 	
         for(int i = 0; i<values.size();i++){
@@ -447,27 +407,29 @@ void travel(){
 	
 	if(values[1].compare(ID) == 0){
 		int major = stoi(values[2]);
-		if(major == 0 && eb_nextDest == 0){
+		if(major == 0 && eb_nextDest == COLLECTION){
 			int collectRSSI = stoi(values[3]);
 			std::cout << collectRSSI << "\n";
+            printf("Going to Collection beacon \n");
 			
 			if(collectRSSI > ATDESTRSSI){
 				
 				ei_state = COLLECTIONSTATE;
-				eb_lineFollow = 0;
-				printf("we are the best \n");
+				eb_lineFollow = FALSE;
+				printf("Arrived at Collection Zone \n");
 				break;
 			}
 		}
-		else if(major == 1 && eb_nextDest ==1){
+		else if(major == 1 && eb_nextDest == DISPOSAL){
 			int disposalRSSI = stoi(values[3]);
 			std::cout << disposalRSSI << "\n";
+            printf("Going to Disposal beacon \n");
 
 			if(disposalRSSI > ATDESTRSSI){
 				
 				ei_state = DISPOSALSTATE;
 				eb_lineFollow = 0;
-				printf("we are pretty good \n");
+				printf("Arrived at Disposal Zone \n");
 				break;
 			}
 		}	
@@ -504,10 +466,16 @@ void travel(){
 
 
 void collection(){
-    while ((ci_sensorFill >= BINEMPTYDIST) && (ei_userCommand == NO_COMMAND)){
-        // Making it a super super
+    while ((eb_binFilled == FALSE) && (ei_userCommand == NO_COMMAND)){
+        //printf("Collecting Mode \n");
+        //Can replace if statement with function
+        //that implements more accurate bin full function
+        if(ci_sensorFill <= BINFULLDIST){
+            eb_binFilled = TRUE;
+        }
         if (ei_error != 0)
         {
+
             ei_prevState = ei_state;
             ei_state = ERRORSTATE;
             break;
@@ -535,17 +503,24 @@ void collection(){
     }
     else
     {
+        printf("in collection");
+        while(1){
+
+        }
         ei_prevState = ei_state;
-        eb_nextDest = 1; //next destination is disposal
+        eb_nextDest = DISPOSAL; //next destination is disposal
         ei_state = TRAVELSTATE;
     return;
     }
 }
 
 void disposal(){
-    while( (ci_sensorFill < BINFULLDIST) && (ei_userCommand == NO_COMMAND) ){
+    while( (eb_binEmptied == FALSE) && (ei_userCommand == NO_COMMAND) ){
         //Stay still, wait for garbage to be disposed
         //send message to app, error state will bring back to disposal state
+        if(ci_sensorFill < BINEMPTYDIST){
+            eb_binEmptied= TRUE;
+        }
         if(ei_error != 0){
             ei_prevState = ei_state;
             ei_state = ERRORSTATE; //set state to 0 for error state due to error
