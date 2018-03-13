@@ -19,6 +19,55 @@
 #include <fstream>
 #include <vector>
 
+//NicksServer includes------------------------------------------------------------
+#include <sys/socket.h>
+#include <bluetooth/bluetooth.h> 
+#include <bluetooth/rfcomm.h> 
+#include <string.h>
+
+//CONSTANT DECLARTION 
+//TODO change macros to const 
+#define STATE_NOCONNECTION 0 
+#define STATE_CONNECTED 1 
+
+
+//CONSTANTS DECLARATION 
+//TODO change macros to const 
+#define MODE 0 
+#define FILL 1
+#define BATT 2 
+#define SIG  3
+#define UPDATE_SIZE 4
+
+#define FILL_FULL 0 
+#define FILL_PARTIAL 1 
+#define FILL_NEAR_EMPTY 2 
+#define FILL_EMPTY 3 
+
+//GLOBAL VARIABLE DECLARATION 
+int connectionStatus = STATE_NOCONNECTION; 
+
+struct sockaddr_rc loc_addr = { 0 }, rem_addr = { 0 };
+char buf[1024] = { 0 };
+int sock, client; 
+socklen_t opt = sizeof(rem_addr);
+
+char address[18] = "B8:27:EB:08:F9:52"; //Address of the pi NOTE: Must change for each spereate pi used  
+
+pthread_t readThread, writeThread; 
+clock_t t, new_t; 
+
+
+//FUNCTION DECLARATION 
+void setupSocket(); 
+void listen(); 
+void spawn();
+void *writeToApp(void *ptr); 
+void *readFromApp(void *ptr); 
+
+//-------------------------------------------------------------------------
+
+
 //declare primary functions
 //hello
 void *FSM(void* ptr);
@@ -30,7 +79,7 @@ void travel();
 void collection();
 void disposal();
 void pathFinding();
-void obstacleAvoidance();
+//void obstacleAvoidance();
 void endFunc();
 void logFunc();
 
@@ -39,14 +88,7 @@ void setupPins();
 void setupi2c();
 unsigned char readData();
 void writeData(int val);
-void rightMotorForward();
-void rightMotorReverse();
-void leftMotorForward();
-void leftMotorReverse();
-void moveForward();
-void adjustAnglePositive();
-void adjustAngleNegative();
-void allStop();
+
 
 
 //declare sensor/actuator functions
@@ -111,7 +153,7 @@ unsigned char ultraVal;
 #define I2CDELAY 75
 
 
-//declare global variables------------------------------------------------------------
+//declare global variables--------
 int ei_state= TRAVELSTATE;
 double ed_fillLevel;
 double vd_battVoltage;
@@ -183,17 +225,17 @@ int iret1FSM, iret2bluetoothServer, iret3errorDiag, iret4Data;
 //Initialize global variables for start of FSM, Diagnostics and Communications (maybe read from a log to get last values)
 
 //create independent threads to run each function
-iret1FSM = pthread_create( &thread1, NULL, FSM, NULL);
-//iret2bluetoothServer = pthread_create( &thread2, NULL, bluetoothServer, NULL);
+//iret1FSM = pthread_create( &thread1, NULL, FSM, NULL);
+iret2bluetoothServer = pthread_create( &thread2, NULL, bluetoothServer, NULL);
 //iret3errorDiag = pthread_create( &thread3, NULL, errorDiag, NULL);
-iret4Data = pthread_create( &thread4, NULL, Data, NULL);
+//iret4Data = pthread_create( &thread4, NULL, Data, NULL);
 
 
 //wait for each thread to finish before completing program
-pthread_join( thread1, NULL);
-//pthread_join( thread2, NULL);
+//pthread_join( thread1, NULL);
+pthread_join( thread2, NULL);
 //pthread_join( thread3, NULL);
-pthread_join( thread4, NULL);
+//pthread_join( thread4, NULL);
 
 //print to console to confirm program has finished
 std::cout << "\n";
@@ -563,7 +605,7 @@ void endFunc(){
 
 void pathFinding(){
 }
-
+/*
 void obstacleAvoidance(){
     if(numMoves>=ALLOWEDMOVES){
         if((ci_sensorFront>=FTHRESH) && (ci_sensorRight>=LRTHRESH) && (ci_sensorLeft>=LRTHRESH)){
@@ -607,6 +649,7 @@ void obstacleAvoidance(){
     //printf("Nummoves: \t");
     //printf("%i\n",numMoves);
 }
+*/
 
 void logFunc(){
     //put code here to write variables to a log
