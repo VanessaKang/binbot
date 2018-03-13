@@ -1,0 +1,690 @@
+
+//Binbot Drivers
+//This code contains all the relevent IO assignments
+//and basic functionality required for movement
+
+#include <NewPing.h>
+#include <NewTone.h>
+#include <Wire.h>
+
+//PIN NUMBERS
+//Since we are emulating an Arduino Uno we must use the same numbering system as if we
+//were plugging things in directly to an Uno. See IO Table for complete assignment of IO
+
+//ANALOG IO ARDUINO PINS
+int PIN_TEMP = 1;
+int PIN_LINE_RIGHT  = 2;
+int PIN_LINE_LEFT = 3;
+
+//DIGITAL IO ARDUINO PINS
+int PIN_ULTRA_FRONT = 2;
+int PIN_ULTRA_RIGHT = 4;
+int PIN_ULTRA_LEFT = 7;
+int PIN_ULTRA_LEVEL = 13;
+int PIN_ULTRA_VERTICAL = 12;
+int PIN_RMFWD = 5;
+int PIN_RMRVS = 6;
+int PIN_LMFWD = 9;
+int PIN_LMRVS = 10;
+int PIN_SOUND = 8;
+int PIN_SERVO = 3;
+int PIN_STATUSLED = 11;
+
+int fthresh = 30;
+int lrthresh = 20;
+int turnVal = 15;
+double distanceVal;
+int allowedMoves = 10;
+
+int numMoves;
+int moveFlag;
+
+double wheelBotRatio = 3.149;
+double secondDegreeRatio = 215.0;
+double secondMeterRatio = 4.7;
+
+double deltaDistance;
+double deltaAngle;
+
+double startDistance = 1;
+
+double travelDistance;
+double remainDistance; 
+
+double avoidAngle;
+double avoidDistance;
+
+double newDistance;
+
+#define SLAVE_ADDRESS 0x04
+int piCommand;
+int outValue;
+
+int frontReadVal;
+int rightReadVal;
+int leftReadVal;
+int levelReadVal;
+int verticalReadVal;
+int tempReadVal;
+int lineRightReadVal;
+int lineLeftReadVal;
+
+int levelCount;
+int levelLock;
+
+int ULTRADELAY = 50;
+int blackThresh = 600;
+int whiteThresh = 50;
+int sensorCount = 1;
+int offLineCounter;
+int sweepCounter;
+int ultraCounter;
+int lineFollowFlag;
+
+void setup() {
+  //All the IO must be assigned to either an Input or Output mode
+  //Ultrasonics are assigned with a special function and are called locally within each read function
+  
+  //ASSIGN ANALOG IO
+  pinMode(PIN_TEMP,INPUT);
+  pinMode(PIN_LINE_RIGHT,INPUT);
+  pinMode(PIN_LINE_LEFT,INPUT);
+
+  //ASSIGN DIGITAL IO
+  pinMode(PIN_RMFWD,OUTPUT);
+  digitalWrite(PIN_RMFWD,0);
+  
+  pinMode(PIN_RMRVS,OUTPUT);
+  digitalWrite(PIN_RMRVS,0);
+  
+  pinMode(PIN_LMFWD,OUTPUT);
+  digitalWrite(PIN_LMFWD,0);
+  
+  pinMode(PIN_LMRVS,OUTPUT);
+  digitalWrite(PIN_LMRVS,0);
+  
+  pinMode(PIN_SOUND,OUTPUT);
+  pinMode(PIN_SERVO,OUTPUT);
+  pinMode(PIN_STATUSLED,OUTPUT);
+
+  NewTone(PIN_SOUND,262);
+  statusLEDOn();
+  delay(250);
+  NewTone(PIN_SOUND,400);
+  statusLEDOff();
+  delay(250);
+  NewTone(PIN_SOUND,262);
+  statusLEDOn();
+  delay(250);
+  noNewTone(PIN_SOUND);
+  statusLEDOff();
+  
+  
+  Serial.begin(9600);
+
+  Wire.begin(SLAVE_ADDRESS);
+  Wire.onReceive(receiveData);
+  Wire.onRequest(sendData);
+}
+
+void loop() {
+
+//    frontReadVal = ultraFrontRead();
+
+//    leftReadVal = ultraLeftRead();
+//    levelReadVal = ultraLevelRead();
+//    //verticalReadVal = ultraVerticalRead();
+//    tempReadVal = tempSensorRead();
+//
+
+//
+
+    //if((frontReadVal < fthresh) | (rightReadVal < lrthresh) | (leftReadVal < lrthresh)){
+      //collisionAvoidance();
+    //  allStop();
+    //}
+    //else{
+    if(lineFollowFlag==1){
+      Serial.println("Line Follow Flag Set");    
+      sensorCheckNew();
+    }
+
+    //}
+
+}
+
+void lineFollowFlagSet(){
+  lineFollowFlag=1;
+}
+void lineFollowFlagStop(){
+  lineFollowFlag=0;
+}
+void sensorCheckNew(){
+    statusLEDOn();
+    lineRightReadVal = lineRightSensorRead();
+    lineLeftReadVal = lineLeftSensorRead();
+    if(ultraCounter==0){
+      frontReadVal = ultraFrontRead();
+      rightReadVal = ultraRightRead();
+      leftReadVal = ultraLeftRead();
+      if(frontReadVal <= 0 or frontReadVal > 400){
+        frontReadVal = 400;
+      }
+      if(rightReadVal <= 0 or rightReadVal > 400){
+        rightReadVal = 400;
+      }
+      if(leftReadVal <= 0 or leftReadVal > 400){
+        leftReadVal = 400;
+      }
+      printSensors();
+      if((frontReadVal<fthresh) or (rightReadVal<lrthresh) or (leftReadVal<lrthresh)){
+        allStop();
+        Serial.println("I AM STOPPED");
+      }
+      else{
+        lineFollow();
+        Serial.println("LINE FOLLOW");
+      }
+    }
+    else{
+      lineFollow();
+      ultraCounter ++;
+      if(ultraCounter >= 5){
+        ultraCounter = 0;
+      }
+    }
+                
+}
+void sensorCheck(){
+      while(piCommand==18){
+        lineRightReadVal = lineRightSensorRead();
+        lineLeftReadVal = lineLeftSensorRead();
+        if (sensorCount == 1){
+          frontReadVal = ultraFrontRead();
+          if(frontReadVal == 0 or frontReadVal > 400){
+              frontReadVal = 400;
+          }
+            if(frontReadVal < fthresh){
+              allStop();  
+            }
+            else{
+              lineFollow();
+            }
+        }
+        
+        else if(sensorCount == 2){
+          rightReadVal = ultraRightRead();
+          if(rightReadVal == 0 or rightReadVal > 400){
+          rightReadVal = 400;
+          }
+            if(rightReadVal < lrthresh){
+              allStop();  
+            }
+            else{
+              lineFollow();
+            }
+          
+        }
+        else if(sensorCount == 3){
+  
+          if(leftReadVal == 0 or leftReadVal > 400){
+            leftReadVal = 400;
+          }
+            if(leftReadVal < fthresh){
+              allStop();  
+            }
+            else{
+              lineFollow();
+            }
+        }
+        else if(sensorCount == 4){
+          sensorCount = 1;
+        }
+        sensorCount++;
+      }
+ 
+        
+}
+void lineFollow(){
+  if((lineRightReadVal <= whiteThresh) & (lineLeftReadVal <= whiteThresh)){
+    moveForward();
+    offLineCounter = 0;
+  }
+  else if((lineRightReadVal > whiteThresh) & (lineLeftReadVal <= whiteThresh)){
+    adjustAngleLeft();
+    offLineCounter = 0;
+  }
+  else if((lineRightReadVal <= whiteThresh) & (lineLeftReadVal > whiteThresh)){
+    adjustAngleRight();
+    offLineCounter = 0;
+  }
+  else{
+    if(offLineCounter<5){
+      moveReverse();
+      offLineCounter ++;      
+    }
+    else{
+      allStop();
+    }
+  }
+
+}
+
+void sweep(){
+  sweepCounter++;
+  if(sweepCounter==0){
+    moveReverse();
+  }
+  else if((sweepCounter % 2 != 0) and (sweepCounter % 3 !=0)){
+    adjustAngleRight();
+    delay(100*sweepCounter);
+  }
+  else if((sweepCounter % 2 == 0) and (sweepCounter % 3 !=0)){
+    adjustAngleLeft();
+    delay(100*sweepCounter);
+  }
+  else if(sweepCounter % 3 == 0){
+    moveReverse();
+    delay(100);
+  }
+  else if(sweepCounter>=20){
+    allStop();
+  }
+}
+
+void collisionAvoidance(){
+  if(frontReadVal == 0 or frontReadVal > 400){
+    frontReadVal = 400;
+  }
+  if(rightReadVal == 0 or rightReadVal > 400){
+    rightReadVal = 400;
+  }
+  if(leftReadVal == 0 or leftReadVal > 400){
+    leftReadVal = 400;
+  }
+
+  if(levelReadVal<=28){
+    levelCount ++;
+  }
+  if(levelCount>10){
+      if(numMoves==allowedMoves){
+      if((frontReadVal>=fthresh) & (rightReadVal>=lrthresh) & (leftReadVal>=lrthresh)){
+        numMoves = 0;
+      }
+      else{
+        adjustAngleRight();
+        NewTone(PIN_SOUND,400);    
+        Serial.println("Exiting looping state");
+      }
+    }
+    if(numMoves < allowedMoves){
+      if((frontReadVal>=fthresh) & (rightReadVal>=lrthresh) & (leftReadVal>=lrthresh)){
+        numMoves = 0;
+        statusLEDOn();
+        noNewTone(PIN_SOUND);
+        Serial.println("Moving forward");
+        moveForward();
+      }
+      else if(frontReadVal<=fthresh){
+        numMoves ++;
+        statusLEDOff();
+        NewTone(PIN_SOUND,262);
+        if(rightReadVal < leftReadVal){
+          adjustAngleLeft();
+          Serial.println("Turning Left");
+        }
+        else if (leftReadVal < rightReadVal) {
+           adjustAngleRight();
+           Serial.println("Turning Right");
+        }
+      }
+      else if(frontReadVal>=fthresh){
+        numMoves ++;
+        statusLEDOff();
+        NewTone(PIN_SOUND,262);
+        if(rightReadVal<=lrthresh){
+          adjustAngleLeft();
+          Serial.println("Turning Left");
+        }
+        else if (leftReadVal<=lrthresh) {
+           adjustAngleRight();
+           Serial.println("Turning Right");
+        }
+      }
+    }
+  } 
+}
+
+void allStop(){
+  digitalWrite(PIN_RMFWD,0);
+  digitalWrite(PIN_RMRVS,0);
+  digitalWrite(PIN_LMFWD,0);
+  digitalWrite(PIN_LMRVS,0);
+}
+
+void rightMotorForward(){
+  digitalWrite(PIN_RMFWD,1);
+  digitalWrite(PIN_RMRVS,0);
+  
+}
+
+void rightMotorReverse(){
+  digitalWrite(PIN_RMRVS,1);
+  digitalWrite(PIN_RMFWD,0);
+}
+
+void leftMotorForward(){
+  digitalWrite(PIN_LMFWD,1);
+  digitalWrite(PIN_LMRVS,0);
+}
+
+void leftMotorReverse(){
+  digitalWrite(PIN_LMRVS,1);
+  digitalWrite(PIN_LMFWD,0);
+}
+void rightMotorStop(){
+  digitalWrite(PIN_RMRVS,0);
+  digitalWrite(PIN_RMFWD,0);
+}
+
+void leftMotorStop(){
+  digitalWrite(PIN_LMRVS,0);
+  digitalWrite(PIN_LMFWD,0);
+}
+void moveForward(){
+  rightMotorForward();
+  leftMotorForward();
+}
+
+
+void moveReverse(){
+  rightMotorReverse();
+  leftMotorReverse();
+}
+
+void adjustAngleLeft(){
+  rightMotorForward();
+  leftMotorStop();
+}
+
+void adjustAngleRight(){
+  leftMotorForward();
+  rightMotorStop();
+}
+
+void statusLEDOn(){
+  digitalWrite(PIN_STATUSLED,1);
+}
+
+void statusLEDOff(){
+  digitalWrite(PIN_STATUSLED,0);
+}
+
+int tempSensorRead(){
+  int tempAnalog = analogRead(PIN_TEMP);
+  int temp = ((5*tempAnalog*100)/1024); 
+  return temp;
+}
+
+int lineRightSensorRead(){
+  int valAnalog = analogRead(PIN_LINE_RIGHT);
+  return valAnalog; 
+}
+
+int lineLeftSensorRead(){
+  int valAnalog = analogRead(PIN_LINE_LEFT);
+  return valAnalog;
+}
+
+int ultraFrontRead(){
+  NewPing IO_ULTRA_FRONT(PIN_ULTRA_FRONT,PIN_ULTRA_FRONT);
+  delay(ULTRADELAY);
+  int val = IO_ULTRA_FRONT.ping();
+  val = val/US_ROUNDTRIP_CM;
+  return val;
+}
+
+int ultraRightRead(){
+  NewPing IO_ULTRA_RIGHT(PIN_ULTRA_RIGHT,PIN_ULTRA_RIGHT);
+  delay(ULTRADELAY);
+  int val = IO_ULTRA_RIGHT.ping();
+  val = val/US_ROUNDTRIP_CM;
+  return val;
+}
+
+int ultraLeftRead(){
+  NewPing IO_ULTRA_LEFT(PIN_ULTRA_LEFT,PIN_ULTRA_LEFT);
+  delay(ULTRADELAY);
+  int val = IO_ULTRA_LEFT.ping();
+  val = val/US_ROUNDTRIP_CM;
+  return val;
+}
+
+int ultraLevelRead(){
+  NewPing IO_ULTRA_LEVEL(PIN_ULTRA_LEVEL,PIN_ULTRA_LEVEL);
+  delay(ULTRADELAY);
+  int val = IO_ULTRA_LEVEL.ping();
+  val = val/US_ROUNDTRIP_CM;
+  return val;
+}
+
+int ultraVerticalRead(){
+  NewPing IO_ULTRA_VERTICAL(PIN_ULTRA_VERTICAL,PIN_ULTRA_VERTICAL);
+  delay(ULTRADELAY);
+  int val = IO_ULTRA_VERTICAL.ping();
+  val = val/US_ROUNDTRIP_CM;
+  return val;
+}
+
+
+void moveForwardDistance(float val){
+  double forwardBotDelay;
+  forwardBotDelay = val*secondMeterRatio*1000;
+  moveForward();
+  delay(forwardBotDelay);
+  //allStop();
+}
+
+void rightRotateWheels(int val){
+  double turnWheelDelay;
+  turnWheelDelay = val*(1000/secondDegreeRatio);
+  //Experimentally derived, ideal value should be (1/240)s/deg
+  adjustAngleRight();
+  delay(turnWheelDelay);
+  //allStop();
+}
+
+void rightRotateBot(int val){
+  int turnBotDelay;
+  turnBotDelay = val*wheelBotRatio*(1000/secondDegreeRatio);
+  //Experimentally derived, ideal value should be (1/240)s/deg
+  adjustAngleRight();
+  delay(turnBotDelay);
+  //allStop(); 
+}
+
+void leftRotateWheels(int val){
+  int turnWheelDelay;
+  turnWheelDelay = val*(1000/secondDegreeRatio);
+  //Experimentally derived, ideal value should be (1/240)s/deg
+  adjustAngleLeft();
+  delay(turnWheelDelay);
+  //allStop();
+}
+
+void leftRotateBot(int val){
+  int turnBotDelay;
+  turnBotDelay = val*wheelBotRatio*(1000/secondDegreeRatio);
+  //Experimentally derived, ideal value should be (1/240)s/deg
+  adjustAngleLeft();
+  delay(turnBotDelay);
+  //allStop(); 
+}
+
+void printSensors(){
+  Serial.print("Front ultra sensor reading");
+  Serial.print(frontReadVal);
+  Serial.print("cm \n");
+  Serial.print("Right ultra sensor reading");
+  Serial.print(rightReadVal);
+  Serial.print("cm \n");
+  Serial.print("Left ultra sensor reading");
+  Serial.print(leftReadVal);
+  Serial.print("cm \n");
+  Serial.print("Right light sensor reading");
+  Serial.print(lineRightReadVal);
+  Serial.print("\n");
+  Serial.print("Left light sensor reading");
+  Serial.print(lineLeftReadVal);
+  Serial.print("\n");
+  //Serial.print("Fill level sensor reading");
+  //Serial.print(levelReadVal);
+  //Serial.print("cm \t");
+  //Serial.print("Vertical sensor reading");
+  //Serial.print(verticalReadVal);
+  //Serial.println("cm");
+}
+
+void receiveData(int byteCount){
+  while(Wire.available()){
+    piCommand = Wire.read();
+    Serial.print("I have recieved the command #: ");
+    Serial.println(piCommand);
+    switch(piCommand){
+      case 1:
+        outValue = frontReadVal;
+        break;
+      case 2:
+        outValue = rightReadVal;
+        break;
+      case 3:
+        outValue = leftReadVal;
+        break;
+      case 4:
+        outValue = levelReadVal;
+        break;
+      case 5:
+        outValue = verticalReadVal;
+        break;
+      case 6:
+        outValue = tempReadVal;
+        break;
+      case 7:
+        outValue = lineRightReadVal;
+        break;
+      case 8:
+        outValue = lineLeftReadVal;
+        break;
+      case 9:
+        statusLEDOn();
+        break;
+      case 10:
+        statusLEDOff();
+        break;
+      case 11:
+        rightMotorForward();
+        break;
+      case 12:
+        rightMotorReverse();
+        break;
+      case 13:
+        rightMotorStop();
+        break;
+      case 14:
+        leftMotorForward();
+        break;
+      case 15:
+        leftMotorReverse();
+        break;
+      case 16:
+        leftMotorStop();
+        break;
+      case 17: 
+        NewTone(PIN_SOUND,262);
+        break;
+      case 18:
+        sensorCheck();
+        break;
+      case 19:
+        lineFollowFlagSet();
+        break;
+      case 20:
+        allStop();
+        lineFollowFlagStop();
+        break;
+    }
+  }  
+
+}
+
+void sendData(){
+    switch(piCommand){
+      case 1:
+        Serial.print("Front Ultrasonic reading: ");
+        break;
+      case 2:
+        Serial.print("Right Ultrasonic reading: ");
+        break;
+      case 3:
+        Serial.print("Left Ultrasonic reading: ");
+        break;
+      case 4:
+        Serial.print("Level Ultrasonic reading: ");
+        break;
+      case 5:
+        Serial.print("Vertical Ultrasonic reading: ");
+        break;
+      case 6:
+        Serial.print("Temperature reading: ");
+        break;
+      case 7:
+        Serial.print("Right Line reading: ");
+        break;
+      case 8:
+        Serial.print("Left Line reading: ");
+        break;
+      case 9:
+        Serial.print("LED Turned On");
+        break;
+      case 10:
+        Serial.print("LED Turned Off");
+        break;
+      case 11:
+        Serial.print("Right Motor Forward");
+        break;
+      case 12:
+        Serial.print("Right Motor Reverse");
+        break;
+      case 13:
+        Serial.print("Right Motor Stop");
+        break;
+      case 14:
+        Serial.print("Left Motor Forward");
+        break;
+      case 15:
+        Serial.print("Left Motor Reverse");
+        break;
+      case 16:
+        Serial.print("Left Motor Stop");
+        break;
+      case 17:
+        Serial.print("Making annoying noise");
+        break;
+      case 18:
+        Serial.print("Collision avoidance 1");
+        break;
+      case 19:
+        Serial.print("Collision avoidance 2");
+        break;
+      case 20:
+        Serial.print("All Stop");
+        break;
+    }
+  Serial.println(outValue);
+  Wire.write(outValue);
+}
+
+
+
+
+
