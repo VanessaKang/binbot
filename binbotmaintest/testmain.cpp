@@ -1,3 +1,4 @@
+#include <stdlib.h> 
 #include <stdio.h>
 #include <iostream>
 #include <fcntl.h>
@@ -18,13 +19,10 @@
 #include <iomanip>
 #include <fstream>
 #include <vector>
-
-//NicksServer includes------------------------------------------------------------
-#include <sys/socket.h>
 #include <bluetooth/bluetooth.h> 
 #include <bluetooth/rfcomm.h> 
-#include <string.h>
 
+//
 //CONSTANT DECLARTION 
 //TODO change macros to const 
 #define STATE_NOCONNECTION 0 
@@ -225,17 +223,17 @@ int iret1FSM, iret2bluetoothServer, iret3errorDiag, iret4Data;
 //Initialize global variables for start of FSM, Diagnostics and Communications (maybe read from a log to get last values)
 
 //create independent threads to run each function
-//iret1FSM = pthread_create( &thread1, NULL, FSM, NULL);
+iret1FSM = pthread_create( &thread1, NULL, FSM, NULL);
 iret2bluetoothServer = pthread_create( &thread2, NULL, bluetoothServer, NULL);
 //iret3errorDiag = pthread_create( &thread3, NULL, errorDiag, NULL);
-//iret4Data = pthread_create( &thread4, NULL, Data, NULL);
+iret4Data = pthread_create( &thread4, NULL, Data, NULL);
 
 
 //wait for each thread to finish before completing program
-//pthread_join( thread1, NULL);
+pthread_join( thread1, NULL);
 pthread_join( thread2, NULL);
 //pthread_join( thread3, NULL);
-//pthread_join( thread4, NULL);
+pthread_join( thread4, NULL);
 
 //print to console to confirm program has finished
 std::cout << "\n";
@@ -253,10 +251,10 @@ void *FSM(void *ptr){
     printf("FSM Thread Running \n");
     while(1){   //Run Various states until commanded to break
 
-        if(timeFromStart(start) > runTime ){
+        /*if(timeFromStart(start) > runTime ){
             printf("errorDiag has exited \n");
             break;
-        }
+        }*/
 
         switch (ei_state){
             case 0:
@@ -299,17 +297,46 @@ void *FSM(void *ptr){
 
 void *bluetoothServer(void *ptr){
     printf("bluetoothServer Thread Running \n");
+    setupSocket();
     while(1){
-        if(timeFromStart(start) > runTime){
+        /*if(timeFromStart(start) > runTime){
             printf("bluetoothServer has exited \n");
             break;
-        }
-    }
+        } */
+
+		listen();
+		spawn(); 
+
+		clock_t begin, end; //FOR TESTING
+		begin = clock()/CLOCKS_PER_SEC;  //FOR TESTING 
+
+		//While loop used to manage threads for lost connections 
+		while (connectionStatus == STATE_CONNECTED) {
+			///////FOR TESTING//////////////////////////////////////
+			end = clock()/CLOCKS_PER_SEC; 
+			if(end - begin > 5){
+				printf("MAIN: Looping\n"); 
+                printf("%i \n", ei_userCommand);
+				begin = clock()/CLOCKS_PER_SEC; 
+			} 
+			/////////////////////////////////////////////////////////////////////
+		}//while(connectionStatus) 
+
+		//Handles status when connection is lost 
+		printf("MAIN: Connection Lost\n"); 
+		
+		//Ensure Threads have closed  
+		pthread_join(readThread, NULL); 
+		pthread_join(writeThread, NULL);
+
+		//close client connection 
+		close(client);
+	}//while 
 }
 
 void *errorDiag(void *ptr){
     printf("errorDiag Thread Running \n");
-    while(1){
+    while(TRUE){
         overheatDiag();
         batteryLowDiag();
         fallOverDiag();
@@ -335,21 +362,21 @@ void *errorDiag(void *ptr){
 void *Data(void *ptr){
     while(1){
     	if(eb_lineFollow == TRUE && ei_state == TRAVELSTATE){
-                //printf("linefollowing \n");
+                printf("linefollowing \n");
         		writeData(19);
     	}
     	else if(eb_lineFollow == FALSE && ei_state == TRAVELSTATE){
-            //printf("stopping \n");
+            printf("stopping \n");
     		writeData(20);
     	}
         if(ei_state == COLLECTIONSTATE || ei_state == DISPOSALSTATE){
             writeData(4);
             delay(I2CDELAY);
-            //ci_sensorFill = readData();
+            ci_sensorFill = readData();
             if(ci_sensorFill==0 or ci_sensorFill>255){
                 ci_sensorFill = 255;
             }
-            printf("SensorFill: %i \n",ci_sensorFill);
+            //printf("SensorFill: %i \n",ci_sensorFill);
         }
         
     }
@@ -455,7 +482,8 @@ void travel(){
             printf("Going to Collection beacon \n");
 			
 			if(collectRSSI > ATDESTRSSI){
-				
+
+				ei_prevState = TRAVELSTATE;
 				ei_state = COLLECTIONSTATE;
 				eb_lineFollow = FALSE;
 				printf("Arrived at Collection Zone \n");
@@ -469,6 +497,7 @@ void travel(){
 
 			if(disposalRSSI > ATDESTRSSI){
 				
+                ei_prevState = TRAVELSTATE;
 				ei_state = DISPOSALSTATE;
 				eb_lineFollow = 0;
 				printf("Arrived at Disposal Zone \n");
@@ -477,7 +506,7 @@ void travel(){
 		}	
 	}
     }
-    /*if (ei_error != 0)
+    if (ei_error != 0)
     {
         ei_prevState = TRAVELSTATE;
         ei_state = ERRORSTATE;
@@ -496,14 +525,24 @@ void travel(){
                 //do stop stuff
                 break;
             case MOVE_TO_COLLECTIONS:
-                //do move to collections stuff
+
+                eb_nextDest = COLLECTION;
+                ei_prevState = TRAVELSTATE;
+                ei_state = TRAVELSTATE;
+                eb_lineFollow = FALSE;
+                ei_userCommand = NO_COMMAND;
                 break;
             case MOVE_TO_DISPOSAL:
-                //do move to disposal stuff
+
+                eb_nextDest = DISPOSAL;
+                ei_prevState = TRAVELSTATE;
+                ei_state = TRAVELSTATE;
+                eb_lineFollow = FALSE;
+                ei_userCommand = NO_COMMAND;
                 break;
     return; //break out of function after receiving user command
         }
-    }*/
+    }
 }
 
 
@@ -513,32 +552,42 @@ void collection(){
         //Can replace if statement with function
         //that implements more accurate bin full function
         if(ci_sensorFill <= BINFULLDIST){
+            printf("Bin has been filled \n");
             eb_binFilled = TRUE;
         }
         if (ei_error != 0)
         {
-
             ei_prevState = ei_state;
             ei_state = ERRORSTATE;
+            eb_binFilled = FALSE; //reset flag after exiting loop
             break;
         }
     }
+    eb_binFilled = FALSE; //reset flag after exiting loop
     if(ei_userCommand != NO_COMMAND){
         //switch cases to adjust state based on user command
         switch(ei_userCommand){
             case SHUT_DOWN:
                 //do shutdown stuff
                 logFunc();
-                system("sudo shutdown -h now");
+                //system("sudo shutdown -h now");
                 break;
             case STOP:
                 //do stop stuff
                 break;
             case MOVE_TO_COLLECTIONS:
-                //do move to collections stuff
+                eb_nextDest = COLLECTION;
+                ei_prevState = TRAVELSTATE;
+                ei_state = TRAVELSTATE;
+                eb_lineFollow = FALSE;
+                ei_userCommand = NO_COMMAND;
                 break;
             case MOVE_TO_DISPOSAL:
-                //do move to disposal stuff
+                eb_nextDest = DISPOSAL;
+                ei_prevState = TRAVELSTATE;
+                ei_state = TRAVELSTATE;
+                eb_lineFollow = FALSE;
+                ei_userCommand = NO_COMMAND;
                 break;
     return; //break out of function after receiving user command
         }
@@ -560,15 +609,18 @@ void disposal(){
     while( (eb_binEmptied == FALSE) && (ei_userCommand == NO_COMMAND) ){
         //Stay still, wait for garbage to be disposed
         //send message to app, error state will bring back to disposal state
-        if(ci_sensorFill < BINEMPTYDIST){
+        if(ci_sensorFill >= BINEMPTYDIST){
+            printf("Bin has been emptied \n");
             eb_binEmptied= TRUE;
         }
         if(ei_error != 0){
             ei_prevState = ei_state;
             ei_state = ERRORSTATE; //set state to 0 for error state due to error
+            eb_binEmptied = FALSE; //reset flag after exiting loop
             break;
         }
     }
+    eb_binEmptied = FALSE; //reset flag after exiting loop
 
     if(ei_userCommand != NO_COMMAND){
         //switch cases to adjust state based on user command
@@ -576,16 +628,24 @@ void disposal(){
             case SHUT_DOWN:
                 //do shutdown stuff
                 logFunc();
-                system("sudo shutdown -h now");
+               // system("sudo shutdown -h now");
                 break;
             case STOP:
                 //do stop stuff
                 break;
             case MOVE_TO_COLLECTIONS:
-                //do move to collections stuff
+                eb_nextDest = COLLECTION;
+                ei_prevState = TRAVELSTATE;
+                ei_state = TRAVELSTATE;
+                eb_lineFollow = FALSE;
+                ei_userCommand = NO_COMMAND;
                 break;
             case MOVE_TO_DISPOSAL:
-                //do move to disposal stuff
+                eb_nextDest = DISPOSAL;
+                ei_prevState = TRAVELSTATE;
+                ei_state = TRAVELSTATE;
+                eb_lineFollow = FALSE;
+                ei_userCommand = NO_COMMAND;
                 break;
         return; //break out of function after receiving user command
         }
@@ -814,3 +874,156 @@ double timeFromStart(auto y){
 
     return z;
 }
+
+
+//************************ BlueTooth Server Functions *****************//
+
+//Setup the socket on start 
+void setupSocket() {
+	//allocate socket
+	sock = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+
+	//bind socket to port of BluetoothAdapter 
+	loc_addr.rc_family = AF_BLUETOOTH;
+	str2ba(address, &loc_addr.rc_bdaddr);
+	loc_addr.rc_channel = (uint8_t)1;
+
+	bind(sock, (struct sockaddr *) &loc_addr, sizeof(loc_addr));
+}
+
+//set socket to listen for connection requests 
+void listen() {
+	//put socket into listening mode (blocking call) 
+	printf("MAIN: Listening...\n");
+	listen(sock, 1);
+
+	//Accept a connection 
+	client = accept(sock, (struct sockaddr *) &rem_addr, &opt);
+
+	//Print connection success 
+	ba2str(&rem_addr.rc_bdaddr, buf); 
+	printf("MAIN: accepted connection from %s\n", buf); 
+
+	//clears byte array 
+	memset(buf, 0, sizeof(buf)); 
+	
+	//Alter connection status to display succcess 
+	connectionStatus = STATE_CONNECTED; 
+}//listen 
+
+//Spawn Threads to handle connection read and write 
+void spawn() {
+	//Create Thread for reading
+	int read_result = pthread_create(&readThread, NULL, readFromApp, NULL); 
+
+	if (read_result != 0) {
+		printf("MAIN: Read Thread Creation Failed \n"); 
+	}
+
+	//Create thread for writing 
+	int write_result = pthread_create(&writeThread, NULL, writeToApp, NULL); 
+
+	if (write_result != 0) {
+		printf("MAIN: Write Thread Creation Failed \n");
+	}
+}//spawn 
+
+ //TODO Handles periodic messaging to App and error messaging
+void *writeToApp(void *ptr){
+
+	//Initialize timer,t for first broadcast 
+	t = clock() / CLOCKS_PER_SEC;
+
+	while (connectionStatus == STATE_CONNECTED) {
+		//Set timer, new_t to compare timer, twith 
+		new_t = clock() / CLOCKS_PER_SEC; 
+
+		//Broadcast a message every # seconds 
+		if (new_t - t > 5) {
+
+			//Create update code to pass to the App 
+			int updateMsg [UPDATE_SIZE]; 
+			
+			switch(ei_state){ 
+				case ERRORSTATE:
+					updateMsg[MODE] = ERRORSTATE;
+					break; 
+				case TRAVELSTATE: 
+					updateMsg[MODE] = TRAVELSTATE;
+					break; 
+				case COLLECTIONSTATE: 
+					updateMsg[MODE] = COLLECTIONSTATE; 
+					break; 
+				case DISPOSALSTATE: 
+					updateMsg[MODE] = DISPOSALSTATE; 
+					break; 
+			} 
+			
+			switch(1/*ci_sensorFillLevel*/){
+				case FILL_FULL: 
+					updateMsg[FILL] = FILL_FULL;
+					break; 
+				case FILL_PARTIAL: 
+					updateMsg[FILL] = FILL_PARTIAL;
+					break; 
+				case FILL_NEAR_EMPTY: 
+					updateMsg[FILL] = FILL_NEAR_EMPTY;
+					break; 
+				case FILL_EMPTY: 
+					updateMsg[FILL] = FILL_EMPTY;
+					break; 
+			} 
+			
+			//TODO Write to BinCompanion every time period status of relevent variables 
+			int bytes_wrote = write(client, updateMsg, sizeof(int)*UPDATE_SIZE); 
+			if (bytes_wrote >= 0) {
+				printf("WRITE: wrote successfully\n"); 
+			} else { 
+				printf("WRITE: unable to write\n"); 
+
+				//Unable to send likely to problem with socket 
+				connectionStatus = STATE_NOCONNECTION; 
+			} 		
+			//Reset Timer, t 
+			t = clock() / CLOCKS_PER_SEC;
+		}//if 
+	}//while 
+}//writeToApp 
+
+//TODO Handles reading commands from the app 
+void *readFromApp(void *ptr){
+	// read data from the client
+	while (connectionStatus == STATE_CONNECTED) {
+		int bytes_read = read(client, buf, sizeof(buf));
+		if (bytes_read > 0) {
+			printf("READ: received %s\n", buf);
+
+			//TODO:Compare buf to strings to perfrom actions 
+			if (strcmp(buf, "call") == 0) {ei_userCommand = MOVE_TO_DISPOSAL;}
+			if (strcmp(buf, "return") == 0) { ei_userCommand = MOVE_TO_COLLECTIONS;}
+			if (strcmp(buf, "resume") == 0) {ei_userCommand = MOVE_TO_DISPOSAL;}
+			if (strcmp(buf, "stop") == 0) { ei_userCommand = STOP;}
+			if (strcmp(buf, "shutdown") == 0) { ei_userCommand = SHUT_DOWN;}
+
+			if(strcmp(buf, "disconnect") == 0){
+				connectionStatus = STATE_NOCONNECTION;
+			}
+	
+			//clears byte array 
+			memset(buf, 0, sizeof(buf));  
+		} else {
+		 	printf("READ: failed to read\n"); 
+			connectionStatus = STATE_NOCONNECTION; 
+		} 
+	}//while
+}//readFromApp 
+//PSUEDOCODE
+/* 
+1. On start, set up socket and enter listen state
+2. On accept, manange two threads
+    - readThread: listens to recieve commands from app and reacts to one of five 
+	scenarios
+	- writeThread: writes to app perodically to inform of current status of BinBot; also
+	needs to write to app in case an error occurs (must inform type of error)
+3. on cancel, close socket and set to listen for new connection again 
+*/
