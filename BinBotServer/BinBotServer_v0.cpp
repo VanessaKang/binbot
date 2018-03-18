@@ -14,7 +14,7 @@
 #define STATE_CONNECTED 1 
 
 //GLOBAL VARIABLE DECLARATION 
-int connectionStatus = STATE_NOCONNECTION; 
+int connectionStatus = STATE_NOCONNECTION;
 
 struct sockaddr_rc loc_addr = { 0 }, rem_addr = { 0 };
 char buf[1024] = { 0 };
