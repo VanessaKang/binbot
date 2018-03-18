@@ -13,6 +13,26 @@
 #define STATE_NOCONNECTION 0 
 #define STATE_CONNECTED 1 
 
+
+//CONSTANTS DECLARATION 
+//TODO change macros to const 
+#define MODE 0 
+#define FILL 1
+#define BATT 2 
+#define SIG  3
+#define UPDATE_SIZE 4
+
+#define ERRORSTATE 0 
+#define TRAVELSTATE 1
+#define COLLECTIONSTATE 2
+#define DISPOSALSTATE 3
+
+#define FILL_FULL 0 
+#define FILL_PARTIAL 1 
+#define FILL_NEAR_EMPTY 2 
+#define FILL_EMPTY 3 
+
+
 //GLOBAL VARIABLE DECLARATION 
 int connectionStatus = STATE_NOCONNECTION;
 
@@ -21,7 +41,7 @@ char buf[1024] = { 0 };
 int sock, client; 
 socklen_t opt = sizeof(rem_addr);
 
-char address[18] = "B8:27:EB:98:DA:8B"; //Address of the pi NOTE: Must change for each spereate pi used  
+char address[18] = "B8:27:EB:08:F9:52"; //Address of the pi NOTE: Must change for each spereate pi used  
 
 pthread_t readThread, writeThread; 
 clock_t t, new_t; 
@@ -143,7 +163,6 @@ void *writeToApp(void *ptr){
 	#define FILL_NEAR_EMPTY 2; 
 	#define FILL_EMPTY 3; 
 
-
 	//Initialize timer,t for first broadcast 
 	t = clock() / CLOCKS_PER_SEC;
 
@@ -156,7 +175,7 @@ void *writeToApp(void *ptr){
 
 			//Create update code to pass to the App 
 			char[] updateMsg = new char[UPDATE_SIZE]; 
-			
+
 			switch(ei_state){ 
 				case ERRORSTATE:
 					updateMsg[MODE] = ERRORSTATE;
@@ -186,7 +205,7 @@ void *writeToApp(void *ptr){
 					updateMsg[FILL] = FILL_EMPTY;
 					break; 
 			} 
-			*/
+			
 			//TODO Write to BinCompanion every time period status of relevent variables 
 			int bytes_wrote = write(client, updateMsg, UPDATE_SIZE); 
 			if (bytes_wrote >= 0) {
