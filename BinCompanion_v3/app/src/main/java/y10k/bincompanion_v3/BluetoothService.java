@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 import java.util.UUID;
 
 public class BluetoothService extends Service {
@@ -46,6 +49,10 @@ public class BluetoothService extends Service {
     static final int STATE_DISCONNECTED = 14;
     static final int STATE_FAILED = 15;
 
+    //Server Constants
+    static final int UPDATE_SIZE = 4;
+    static final int ERROR = 0;
+
     //VARIABLE DECLARATION
 
 
@@ -67,21 +74,25 @@ public class BluetoothService extends Service {
     }//LocalBinder
 
     //To handle messages received by the client
-    private Handler mHandler = new Handler(getMainLooper()){
+    private Handler mHandler = new Handler(){
         @Override
-        public void handleMessage(Message msg) {             //TODO
+        public void handleMessage(Message msg) {             //TODO: TEST
             switch(msg.what) {
                 case MESSAGE_READ:
-                    String readMessage = null;
+                    //Converts Received Byte Array into Integer Array
+                    byte[] received_Status = (byte[]) msg.obj;
 
-                    try {
-                        readMessage = new String((byte[]) msg.obj, "UTF-8");
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
+                    //Store status to send to MainActivity
+                    savedData.putByteArray("status", received_Status);
 
-                    savedData.putString("msg", readMessage);
-                    mReceiver.send(UPDATE, savedData);
+                    //Check to see if error occured in BinBot
+                    if(received_Status[0] == ERROR){
+                        //Prompts MainActivity to display error dialog
+                        mReceiver.send(ERROR_OCCURRED, savedData);
+                    } else {
+                        //Send status to update on UI
+                        mReceiver.send(UPDATE, savedData);
+                    }//if
                     break;
                 default:
                     super.handleMessage(msg);
@@ -348,7 +359,7 @@ public class BluetoothService extends Service {
         }//ConnectedThread
 
         public void run() {
-            byte[] mBuffer = new byte[1024];
+            byte[] mBuffer = new byte[UPDATE_SIZE];
             int numBytes;
 
             while(mConnectionStatus == STATE_CONNECTED){

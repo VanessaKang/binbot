@@ -130,6 +130,7 @@ void *writeToApp(void *ptr){
 	#define FILL 1
 	#define BATT 2 
 	#define SIG  3
+
 	#define UPDATE_SIZE 4
 
 	#define ERRORSTATE 0 
@@ -154,7 +155,7 @@ void *writeToApp(void *ptr){
 		if (new_t - t > 5) {
 
 			//Create update code to pass to the App 
-			int[] updateMsg = new int[UPDATE_SIZE]; 
+			char[] updateMsg = new char[UPDATE_SIZE]; 
 			
 			switch(ei_state){ 
 				case ERRORSTATE:
@@ -187,7 +188,7 @@ void *writeToApp(void *ptr){
 			} 
 			*/
 			//TODO Write to BinCompanion every time period status of relevent variables 
-			int bytes_wrote = write(client, updateMsg, sizeof(int)*UPDATE_SIZE); 
+			int bytes_wrote = write(client, updateMsg, UPDATE_SIZE); 
 			if (bytes_wrote >= 0) {
 				printf("WRITE: wrote successfully\n"); 
 			} else { 

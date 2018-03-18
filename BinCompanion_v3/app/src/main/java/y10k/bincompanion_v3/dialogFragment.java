@@ -15,12 +15,10 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.support.v4.app.ActivityCompat;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import java.util.Set;
 
@@ -60,12 +58,12 @@ public class dialogFragment extends DialogFragment {
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         //Set VIew layout of Dialog
-        View view = getActivity().getLayoutInflater().inflate(R.layout.list_fragment, null);
+        View view = getActivity().getLayoutInflater().inflate(R.layout.dialog_fragment, null);
         ListView mList = view.findViewById(R.id.listView);
         mList.setAdapter(listAdapter);
         mList.setOnItemClickListener(mDeviceClickListener);
 
-        if(dialogType == 1) {
+        if(dialogType == 90) {
             dialogTitle = R.string.pairedDeviceTitle;
 
             //Populate adaptor with Paired Devices
@@ -97,8 +95,10 @@ public class dialogFragment extends DialogFragment {
     public void onDismiss(DialogInterface dialog) {
         super.onDismiss(dialog);
 
-        mBluetoothAdapter.cancelDiscovery();
-        getActivity().unregisterReceiver(mBTReceiver);
+        if(dialogType == 2) {
+            mBluetoothAdapter.cancelDiscovery();
+            getActivity().unregisterReceiver(mBTReceiver);
+        }
     }//onDismiss
     //==============================================================================================
     private AdapterView.OnItemClickListener mDeviceClickListener = new AdapterView.OnItemClickListener() {

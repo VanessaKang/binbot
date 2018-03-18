@@ -4,6 +4,7 @@
     <!-- Titles -->
     <string name="pairedDeviceTitle">Paired Devices</string>
     <string name="discoveredDeviceTitle">Discovered Devices</string>
+    <string name="errorTitle">ERROR</string>
 
     <!-- These are menu strings-->
     <string name="listenMenuButton_Label">Listen</string>
@@ -17,8 +18,8 @@
     <string name="battery_Label">Battery Level:</string>
     <string name="rssi_Label">Signal Strength:</string>
 
-    <string name="callButton_Label">Call</string>
-    <string name="returnButton_Label">Return</string>
+    <string name="callButton_Label">Co To Disposal</string>
+    <string name="returnButton_Label">Go To Collection</string>
     <string name="resumeButton_Label">Resume</string>
     <string name="stopButton_Label">Stop</string>
     <string name="shutdownButton_Label">Shutdown</string>

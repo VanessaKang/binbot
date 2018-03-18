@@ -22,6 +22,8 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.UnsupportedEncodingException;
+
 public class MainActivity extends AppCompatActivity {
     //CONSTANTS DECLARATION
 
@@ -69,6 +71,11 @@ public class MainActivity extends AppCompatActivity {
     static final String SHUTDOWN = "shutdown";
     static final String DISCONNECT = "disconnect";
 
+    // Dialog Types
+    static final int PAIRED_DIALOG = 90;
+    static final int DISCOVER_DIALOG = 91;
+    static final int ERROR_DIALOG = 92;
+
     //VARIABLE DECLARATION
     private TextView mConnect;
     private TextView mState;
@@ -76,6 +83,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView mFill;
     private TextView mRSSI;
 
+
+    //TODO: SAVE VARIABLE STATES SO WHEN SWITIVHONG TO LANDSCAPE UI DOES NOT (LIFECYCLE ISSUE)
     private int mConnectionStatus = STATE_NOT_CONNECTED;
     private int mModeStatus = STATE_NOT_CONNECTED;
     private int mBatteryStatus = STATE_NOT_CONNECTED;
@@ -113,12 +122,26 @@ public class MainActivity extends AppCompatActivity {
                     break;
 
                 case UPDATE:
-                    String recvdMsg = resultData.getString("msg");
-                    Toast.makeText(getBaseContext(), recvdMsg, Toast.LENGTH_SHORT).show(); //FOR TESTING
+                    //TODO: Store int to appropriate variables and update UI
+                    byte[] status = resultData.getByteArray("status");
+
+                    //TESTING /////////////////////////
+                    String test = null;
+                    try {
+                        test = new String(status, "UTF-8");
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+
+                    Toast.makeText(getApplicationContext(), test, Toast.LENGTH_SHORT).show();
+                    ///////////////////////////////////
+
+                    updateUI();
                     break;
 
                 case ERROR_OCCURRED:
-                    //TODO
+                    //TODO: Displays Error Dialog
+                    createDialog(ERROR_DIALOG);
                     break;
 
                 default:
@@ -205,25 +228,15 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        //Store resultReceiver to be sent to fragments
-        Bundle bundle = new Bundle();
-        bundle.putParcelable("receiver", mReceiver);
-
-        dialogFragment dialogFrag = new dialogFragment();
-
         int id = item.getItemId();
         switch (id){
             case R.id.action_ShowPaired:
                 //Create Paired Device Fragment
-                bundle.putInt("dialogType", 1);
-                dialogFrag.setArguments(bundle);
-                dialogFrag.show(getFragmentManager(), "dialog");
+                createDialog(PAIRED_DIALOG);
                 break;
             case R.id.action_Connect:
                 //Create Discovered Device Fragment
-                bundle.putInt("dialogType", 2);
-                dialogFrag.setArguments(bundle);
-                dialogFrag.show(getFragmentManager(), "dialog");
+                createDialog(DISCOVER_DIALOG);
                 break;
             case R.id.action_Listen:
                 mService.listen();
@@ -327,6 +340,27 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }//mSignalStatus switch
     }//updateUI
+
+    public void createDialog(int dialogType){
+        //Store information required for dialog in Bundle
+        Bundle bundle = new Bundle();
+        bundle.putParcelable("receiver", mReceiver);
+        bundle.putInt("dialogType", dialogType);
+
+        //Create Dialog Fragment
+        dialogFragment dialogFrag = new dialogFragment();
+        dialogFrag.setArguments(bundle);
+
+        switch (dialogType){
+            case PAIRED_DIALOG:
+                dialogFrag.show(getFragmentManager(), "dialog");
+                break;
+            case DISCOVER_DIALOG:
+                break;
+            case ERROR_DIALOG:
+                break;
+        }//switch
+    }//createDialog
 
     //Send a command call to BinBot
     public void callCommand (View view) {
