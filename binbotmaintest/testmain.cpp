@@ -272,8 +272,8 @@ void *FSM(void *ptr){
                 if(ei_prevState != 1){
 		    
                 }
-		printf("entering travel \n");
-		travel();
+                printf("entering travel \n");
+                travel();
                 
                 ei_prevState = 1;
             break;
@@ -372,6 +372,7 @@ void *Data(void *ptr){
     		writeData(20);
     	}
         if(ei_state == COLLECTIONSTATE || ei_state == DISPOSALSTATE){
+            printf("reading sensor values \n");
             writeData(4);
             delay(I2CDELAY);
             ci_sensorFill = readData();
@@ -557,7 +558,9 @@ void travel(){
 
 
 void collection(){
+    printf("Collection state reached \n");
     while ((eb_binFilled == FALSE) && (ei_userCommand == NO_COMMAND)){
+        usleep(500000);
         //printf("Collecting Mode \n");
         //Can replace if statement with function
         //that implements more accurate bin full function
