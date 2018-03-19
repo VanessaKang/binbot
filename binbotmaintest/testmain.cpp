@@ -454,21 +454,39 @@ void travel(){
 	std::string ID("66666666-6666-6666-6666-666666666666");
 	usleep(500000);
 	std::ifstream beaconFile;
-	beaconFile.open("beaconvalues.txt");
-	if(!beaconFile){
-		std::cout << "Unable to open beaconFile";
-		exit(1);
-	}
-	
-	std::vector<std::string> values;
-	const int MAXSIZE = 100;
-	char thisVal[MAXSIZE];
+	if (eb_nextDest == COLLECTION){
+			beaconFile.open("beaconvaluesCol.txt");
+		if(!beaconFile){
+			std::cout << "Unable to open beaconFile";
+			exit(1);
+		}
+		
+		std::vector<std::string> values;
+		const int MAXSIZE = 100;
+		char thisVal[MAXSIZE];
 
-	while(beaconFile.getline(thisVal,MAXSIZE,',')){
-		values.push_back(thisVal);
+		while(beaconFile.getline(thisVal,MAXSIZE,',')){
+			values.push_back(thisVal);
+		}
+		beaconFile.close();
+		//std::cout << values.size() << "\n";
+	}else if(eb_nextDest == DISPOSAL){
+			beaconFile.open("beaconvaluesDis.txt");
+		if(!beaconFile){
+			std::cout << "Unable to open beaconFile";
+			exit(1);
+		}
+		
+		std::vector<std::string> values;
+		const int MAXSIZE = 100;
+		char thisVal[MAXSIZE];
+
+		while(beaconFile.getline(thisVal,MAXSIZE,',')){
+			values.push_back(thisVal);
+		}
+		beaconFile.close();
+		//std::cout << values.size() << "\n";
 	}
-	beaconFile.close();
-    //std::cout << values.size() << "\n";
     if(values.size() == 0){     //protects against seg faults by trying to access
         break;                  //an empty array
     }
