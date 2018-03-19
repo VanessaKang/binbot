@@ -42,16 +42,16 @@ public class MainActivity extends AppCompatActivity {
     static final int STATE_FAILED = 15;
 
     //State Identifiers
-    static final int COLLECTION = 20;
-    static final int DISPOSAL = 21;
-    static final int TRAVEL = 22;
-    static final int ERROR = 23;
+    static final int COLLECTION = 2;
+    static final int DISPOSAL = 4;
+    static final int TRAVEL = 1;
+    static final int ERROR = 0;
 
     //Fill Level Identifiers
-    static final int FILL_FULL = 30;
-    static final int FILL_NEARFULL = 31;
-    static final int FILL_PARTIAL = 32;
-    static final int FILL_EMPTY = 33;
+    static final int FILL_FULL = 0;
+    static final int FILL_NEARFULL = 1;
+    static final int FILL_PARTIAL = 2;
+    static final int FILL_EMPTY = 3;
 
     //Battery Level Identifiers
     static final int BATTERY_HIGH = 40;
@@ -124,6 +124,9 @@ public class MainActivity extends AppCompatActivity {
                 case UPDATE:
                     //TODO: Store int to appropriate variables and update UI
                     byte[] status = resultData.getByteArray("status");
+
+                    mModeStatus = Character.getNumericValue(status[0]);
+                    mFillStatus = Character.getNumericValue(status[1]);
 
                     //TESTING /////////////////////////
                     String test = null;
@@ -294,21 +297,6 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }//mModeStatus switch
 
-        //Battery Field
-        //TODO
-        switch (mBatteryStatus){
-            case BATTERY_HIGH:
-                break;
-            case BATTERY_MEDIUM:
-                break;
-            case BATTERY_LOW:
-                break;
-            default:
-                //mBattery.setText(R.string.notconnected);
-                mBattery.setText(R.string.notimplemented);
-                break;
-        }//mBatteryStatus switch
-
         //Fill Field
         //TODO
         switch (mFillStatus){
@@ -324,6 +312,21 @@ public class MainActivity extends AppCompatActivity {
                 mFill.setText(R.string.notconnected);
                 break;
         }//mFillStatus switch
+
+        //Battery Field
+        //TODO
+        switch (mBatteryStatus){
+            case BATTERY_HIGH:
+                break;
+            case BATTERY_MEDIUM:
+                break;
+            case BATTERY_LOW:
+                break;
+            default:
+                //mBattery.setText(R.string.notconnected);
+                mBattery.setText(R.string.notimplemented);
+                break;
+        }//mBatteryStatus switch
 
         //Signal Field
         //TODO
