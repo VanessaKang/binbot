@@ -50,7 +50,7 @@ char buf[1024] = { 0 };
 int sock, client; 
 socklen_t opt = sizeof(rem_addr);
 
-char address[18] = "B8:27:EB:08:F9:52"; //Address of the pi NOTE: Must change for each spereate pi used  
+char address[18] = "B8:27:EB:30:19:A2"; //Address of the pi NOTE: Must change for each spereate pi used  
 
 pthread_t readThread, writeThread; 
 clock_t t, new_t; 
@@ -164,6 +164,7 @@ bool eb_nextDest= COLLECTION;
 bool eb_lineFollow = 0;
 bool eb_binFilled = 0;
 bool eb_binEmptied = 0;
+bool eb_motorStop = 0;
 int ei_prevState = 0;
 double md_botLocation;
 int ti_temp;
@@ -361,12 +362,13 @@ void *errorDiag(void *ptr){
 
 void *Data(void *ptr){
     while(1){
-    	if(eb_lineFollow == TRUE && ei_state == TRAVELSTATE){
-                printf("linefollowing \n");
+        usleep(100000);
+    	if(eb_lineFollow == TRUE && ei_state == TRAVELSTATE && eb_motorStop == FALSE){
+                //printf("linefollowing \n");
         		writeData(19);
     	}
-    	else if(eb_lineFollow == FALSE && ei_state == TRAVELSTATE){
-            printf("stopping \n");
+    	else if(eb_lineFollow == FALSE || eb_motorStop == TRUE){
+            //printf("stopping \n");
     		writeData(20);
     	}
         if(ei_state == COLLECTIONSTATE || ei_state == DISPOSALSTATE){
@@ -430,6 +432,7 @@ unsigned char readData(){
 void writeData(int val){
     buffer[0] = val;
     length = 1;
+    //printf("%i \n",val);
     if (write(file_i2c, buffer, length) != length){
         /* ERROR HANDLING: i2c transaction failed */
         //printf("Failed to write to the i2c bus.\n");
@@ -523,6 +526,13 @@ void travel(){
                 break;
             case STOP:
                 //do stop stuff
+                if(eb_motorStop == TRUE){
+                    eb_motorStop = FALSE;
+                }
+                else if(eb_motorStop == FALSE){
+                    eb_motorStop = TRUE;
+                }
+                ei_userCommand = NO_COMMAND;
                 break;
             case MOVE_TO_COLLECTIONS:
 
@@ -551,6 +561,7 @@ void collection(){
         //printf("Collecting Mode \n");
         //Can replace if statement with function
         //that implements more accurate bin full function
+        printf("level val %i %\n", ci_sensorFill);
         if(ci_sensorFill <= BINFULLDIST){
             printf("Bin has been filled \n");
             eb_binFilled = TRUE;
@@ -574,6 +585,13 @@ void collection(){
                 break;
             case STOP:
                 //do stop stuff
+                if(eb_motorStop == TRUE){
+                    eb_motorStop = FALSE;
+                }
+                else if(eb_motorStop == FALSE){
+                    eb_motorStop = TRUE;
+                }
+                ei_userCommand = NO_COMMAND;
                 break;
             case MOVE_TO_COLLECTIONS:
                 eb_nextDest = COLLECTION;
@@ -594,10 +612,6 @@ void collection(){
     }
     else
     {
-        printf("in collection");
-        while(1){
-
-        }
         ei_prevState = ei_state;
         eb_nextDest = DISPOSAL; //next destination is disposal
         ei_state = TRAVELSTATE;
@@ -632,6 +646,13 @@ void disposal(){
                 break;
             case STOP:
                 //do stop stuff
+                if(eb_motorStop == TRUE){
+                    eb_motorStop = FALSE;
+                }
+                else if(eb_motorStop == FALSE){
+                    eb_motorStop = TRUE;
+                }
+                ei_userCommand = NO_COMMAND;
                 break;
             case MOVE_TO_COLLECTIONS:
                 eb_nextDest = COLLECTION;
@@ -1001,7 +1022,7 @@ void *readFromApp(void *ptr){
 			//TODO:Compare buf to strings to perfrom actions 
 			if (strcmp(buf, "call") == 0) {ei_userCommand = MOVE_TO_DISPOSAL;}
 			if (strcmp(buf, "return") == 0) { ei_userCommand = MOVE_TO_COLLECTIONS;}
-			if (strcmp(buf, "resume") == 0) {ei_userCommand = MOVE_TO_DISPOSAL;}
+			if (strcmp(buf, "resume") == 0) {ei_userCommand = STOP;}
 			if (strcmp(buf, "stop") == 0) { ei_userCommand = STOP;}
 			if (strcmp(buf, "shutdown") == 0) { ei_userCommand = SHUT_DOWN;}
 
