@@ -9,28 +9,8 @@
 #include <time.h> 
 
 //CONSTANT DECLARTION 
-//TODO change macros to const 
 #define STATE_NOCONNECTION 0 
 #define STATE_CONNECTED 1 
-
-
-//CONSTANTS DECLARATION 
-//TODO change macros to const 
-#define MODE 0 
-#define FILL 1
-#define BATT 2 
-#define SIG  3
-#define UPDATE_SIZE 4
-
-#define ERRORSTATE 0 
-#define TRAVELSTATE 1
-#define COLLECTIONSTATE 2
-#define DISPOSALSTATE 3
-
-#define FILL_FULL 0 
-#define FILL_PARTIAL 1 
-#define FILL_NEAR_EMPTY 2 
-#define FILL_EMPTY 3 
 
 
 //GLOBAL VARIABLE DECLARATION 
@@ -158,10 +138,10 @@ void *writeToApp(void *ptr){
 	#define COLLECTIONSTATE 2
 	#define DISPOSALSTATE 3
 
-	#define FILL_FULL 0; 
-	#define FILL_PARTIAL 1; 
-	#define FILL_NEAR_EMPTY 2; 
-	#define FILL_EMPTY 3;
+	#define FILL_FULL 0
+	#define FILL_PARTIAL 1
+	#define FILL_NEAR_EMPTY 2
+	#define FILL_EMPTY 3
 
 	const char ID[4] = { '0','1','2','3' }; 
 
@@ -176,7 +156,7 @@ void *writeToApp(void *ptr){
 		if (new_t - t > 5) {
 
 			//Create update code to pass to the App 
-			char[] updateMsg = new char[UPDATE_SIZE]; 
+			char updateMsg[UPDATE_SIZE] = {'0','0','0','0'}; 
 
 			switch(ei_state){ 
 				case ERRORSTATE:
@@ -209,12 +189,6 @@ void *writeToApp(void *ptr){
 			} 
 			
 			//TODO Write to BinCompanion every time period status of relevent variables 
-
-			//TESTING
-			printf("WRITE: %s\n", updateMsg[0]); 
-			printf("WRITE: %s\n", updateMsg[1]);
-			//////////
-
 			int bytes_wrote = write(client, updateMsg, UPDATE_SIZE); 
 			if (bytes_wrote >= 0) {
 				printf("WRITE: wrote successfully\n"); 
