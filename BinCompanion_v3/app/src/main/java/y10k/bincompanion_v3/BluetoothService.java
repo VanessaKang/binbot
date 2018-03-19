@@ -54,8 +54,6 @@ public class BluetoothService extends Service {
     static final int ERROR = 0;
 
     //VARIABLE DECLARATION
-
-
     private int mConnectionStatus = STATE_NOT_CONNECTED;
 
     private ResultReceiver mReceiver = null;
