@@ -161,7 +161,9 @@ void *writeToApp(void *ptr){
 	#define FILL_FULL 0; 
 	#define FILL_PARTIAL 1; 
 	#define FILL_NEAR_EMPTY 2; 
-	#define FILL_EMPTY 3; 
+	#define FILL_EMPTY 3;
+
+	const char ID[4] = { '0','1','2','3' }; 
 
 	//Initialize timer,t for first broadcast 
 	t = clock() / CLOCKS_PER_SEC;
@@ -178,35 +180,41 @@ void *writeToApp(void *ptr){
 
 			switch(ei_state){ 
 				case ERRORSTATE:
-					updateMsg[MODE] = ERRORSTATE;
+					updateMsg[MODE] = ID[ERRORSTATE];
 					break; 
 				case TRAVELSTATE: 
-					updateMsg[MODE] = TRAVELSTATE;
+					updateMsg[MODE] = ID[TRAVELSTATE];
 					break; 
 				case COLLECTIONSTATE: 
-					updateMsg[MODE] = COLLECTIONSTATE; 
+					updateMsg[MODE] = ID[COLLECTIONSTATE]; 
 					break; 
 				case DISPOSALSTATE: 
-					updateMsg[MODE] = DISPOSALSTATE; 
+					updateMsg[MODE] = ID[DISPOSALSTATE]; 
 					break; 
 			} 
 			
 			switch(ed_fillLevel){
 				case FILL_FULL: 
-					updateMsg[FILL] = FILL_FULL;
+					updateMsg[FILL] = ID[FILL_FULL];
 					break; 
 				case FILL_PARTIAL: 
-					updateMsg[FILL] = FILL_PARTIAL;
+					updateMsg[FILL] = ID[FILL_PARTIAL];
 					break; 
 				case FILL_NEAR_EMPTY: 
-					updateMsg[FILL] = FILL_NEAR_EMPTY;
+					updateMsg[FILL] = ID[FILL_NEAR_EMPTY];
 					break; 
 				case FILL_EMPTY: 
-					updateMsg[FILL] = FILL_EMPTY;
+					updateMsg[FILL] = ID[FILL_EMPTY];
 					break; 
 			} 
 			
 			//TODO Write to BinCompanion every time period status of relevent variables 
+
+			//TESTING
+			printf("WRITE: %s\n", updateMsg[0]); 
+			printf("WRITE: %s\n", updateMsg[1]);
+			//////////
+
 			int bytes_wrote = write(client, updateMsg, UPDATE_SIZE); 
 			if (bytes_wrote >= 0) {
 				printf("WRITE: wrote successfully\n"); 
