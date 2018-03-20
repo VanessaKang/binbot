@@ -123,7 +123,7 @@ double timeFromStart(auto y);
 #define FTHRESH 40
 #define LRTHRESH 25
 #define ALLOWEDMOVES 10
-#define ATDESTRSSI -44
+#define ATDESTRSSI -50
 
 
 //State Constants
@@ -152,7 +152,7 @@ unsigned char ultraVal;
 
 
 //declare global variables--------
-int ei_state= TRAVELSTATE;
+int ei_state= COLLECTIONSTATE;
 double ed_fillLevel;
 double vd_battVoltage;
 int ei_error=0;
@@ -362,7 +362,7 @@ void *errorDiag(void *ptr){
 
 void *Data(void *ptr){
     while(1){
-        usleep(100000);
+        usleep(250000);
     	if(eb_lineFollow == TRUE && ei_state == TRAVELSTATE && eb_motorStop == FALSE){
                 //printf("linefollowing \n");
         		writeData(19);
@@ -448,38 +448,38 @@ void errorState(){
 void travel(){
     printf("in the travel state \n");
     eb_lineFollow = TRUE;
+    int collectRSSI [10] = {-70,-70,-70,-70,-70,-70,-70,-70,-70,-70};
+    
+    int disposalRSSI [10] = {-70,-70,-70,-70,-70,-70,-70,-70,-70,-70};
     while (ei_userCommand == NO_COMMAND && ei_error == 0)
     {	
 	std::string str1 (" 0");
 	std::string ID("66666666-6666-6666-6666-666666666666");
-	usleep(500000);
+	usleep(100000);
 	std::ifstream beaconFile;
+  std::vector<std::string> values;
+  const int MAXSIZE = 100;
+  char thisVal[MAXSIZE];
 	if (eb_nextDest == COLLECTION){
+     std::cout << "Update with CollectionRssi" << "\n";
 			beaconFile.open("beaconvaluesCol.txt");
 		if(!beaconFile){
 			std::cout << "Unable to open beaconFile";
 			exit(1);
 		}
 		
-		std::vector<std::string> values;
-		const int MAXSIZE = 100;
-		char thisVal[MAXSIZE];
-
 		while(beaconFile.getline(thisVal,MAXSIZE,',')){
 			values.push_back(thisVal);
 		}
 		beaconFile.close();
 		//std::cout << values.size() << "\n";
 	}else if(eb_nextDest == DISPOSAL){
+     std::cout << "Update with DisposalRssi" << "\n";
 			beaconFile.open("beaconvaluesDis.txt");
 		if(!beaconFile){
 			std::cout << "Unable to open beaconFile";
 			exit(1);
 		}
-		
-		std::vector<std::string> values;
-		const int MAXSIZE = 100;
-		char thisVal[MAXSIZE];
 
 		while(beaconFile.getline(thisVal,MAXSIZE,',')){
 			values.push_back(thisVal);
@@ -499,11 +499,19 @@ void travel(){
 	if(values[1].compare(ID) == 0){
 		int major = stoi(values[2]);
 		if(major == 0 && eb_nextDest == COLLECTION){
-			int collectRSSI = stoi(values[3]);
-			std::cout << collectRSSI << "\n";
-            printf("Going to Collection beacon \n");
-			
-			if(collectRSSI > ATDESTRSSI){
+			for(int i =9; i>=1;i--){
+      collectRSSI[i] = collectRSSI[i-1];
+      }
+      collectRSSI[0] = stoi(values[3]);
+			std::cout << "array" << collectRSSI[0] << " " << collectRSSI[1] << " " << collectRSSI[2] << " " << collectRSSI[3] << " " << collectRSSI[4] << " " << collectRSSI[5] << " " << collectRSSI[6] << " " << collectRSSI[7] << " " << collectRSSI[8] << " " << collectRSSI[9] << "\n";
+      //printf("Going to Collection beacon \n");
+			int sum = 0;
+      for (int i = 0; i<10 ; i++){
+        sum = sum+collectRSSI[i];
+      }
+      int av = sum/10;
+      std::cout << "Average" << av << "\n";
+	 		if(av > ATDESTRSSI){
 
 				ei_prevState = TRAVELSTATE;
 				ei_state = COLLECTIONSTATE;
@@ -513,13 +521,23 @@ void travel(){
 			}
 		}
 		else if(major == 1 && eb_nextDest == DISPOSAL){
-			int disposalRSSI = stoi(values[3]);
-			std::cout << disposalRSSI << "\n";
-            printf("Going to Disposal beacon \n");
-
-			if(disposalRSSI > ATDESTRSSI){
-				
-                ei_prevState = TRAVELSTATE;
+			//int disposalRSSI = stoi(values[3]);
+			//std::cout << disposalRSSI << "\n";
+      printf("Going to Disposal beacon \n");
+      for(int i =9; i>=1;i--){
+      disposalRSSI[i] = disposalRSSI[i-1];
+      }
+      disposalRSSI[0] = stoi(values[3]);
+			std::cout << "array" << disposalRSSI[0] << " " << disposalRSSI[1] << " " << disposalRSSI[2] << " " << disposalRSSI[3] << " " << disposalRSSI[4] << " " << disposalRSSI[5] << " " << disposalRSSI[6] << " " << disposalRSSI[7] << " " << disposalRSSI[8] << " " << disposalRSSI[9] << "\n";
+      //printf("Going to Collection beacon \n");
+			int sum = 0;
+      for (int i = 0; i<10 ; i++){
+        sum = sum+disposalRSSI[i];
+      }
+      int av = sum/10;
+      std::cout << "Average" << av << "\n";
+			if(av > ATDESTRSSI){
+        ei_prevState = TRAVELSTATE;
 				ei_state = DISPOSALSTATE;
 				eb_lineFollow = 0;
 				printf("Arrived at Disposal Zone \n");
