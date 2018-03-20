@@ -29,7 +29,7 @@ socklen_t opt = sizeof(rem_addr);
 
 char address[18] = "B8:27:EB:98:DA:8B"; //Address of the pi NOTE: Must change for each spereate pi used
 
-// B8:27:EB:08:F9:52 matts  
+// B8:27:EB:30:19:A2 matts  
 // B8:27:EB:98:DA:8B nicks
 // B8:27:EB:08:F9:52 vanessas 
 
@@ -133,10 +133,9 @@ void spawn() {
 	}
 }//spawn 
 
- //TODO Handles periodic messaging to App and error messaging
+ //Handles periodic messaging to App and error messaging
 void *writeToApp(void *ptr){
 	//CONSTANTS DECLARATION 
-	//TODO change macros to const 
 	#define MODE 0 
 	#define FILL 1
 	#define BATT 2 
@@ -169,6 +168,11 @@ void *writeToApp(void *ptr){
 			//Create update code to pass to the App 
 			char updateMsg[UPDATE_SIZE] = { '0','0','0','0' };
 
+			//TODO
+			/* 
+			USE ed_nextDest to provide feedback for destination of travel
+			INform user if we are stopped/resume
+			*/
 			switch (ei_state) {
 			case ERRORSTATE:
 				updateMsg[MODE] = ID[ERRORSTATE];
@@ -194,7 +198,7 @@ void *writeToApp(void *ptr){
 				updateMsg[FILL] = ID[FILL_EMPTY];
 			}//if ed_filllevel
 			
-			//TODO Write to BinCompanion every time period status of relevent variables 
+			//Write to BinCompanion every time period status of relevent variables 
 			int bytes_wrote = write(client, updateMsg, UPDATE_SIZE); 
 			if (bytes_wrote >= 0) {
 				printf("WRITE: wrote successfully\n"); 
@@ -210,7 +214,7 @@ void *writeToApp(void *ptr){
 	}//while 
 }//writeToApp 
 
-//TODO Handles reading commands from the app 
+//Handles reading commands from the app 
 void *readFromApp(void *ptr){
 	// read data from the client
 	while (connectionStatus == STATE_CONNECTED) {
@@ -218,7 +222,7 @@ void *readFromApp(void *ptr){
 		if (bytes_read > 0) {
 			printf("READ: received %s\n", buf);
 
-			//TODO:Compare buf to strings to perfrom actions 
+			//       Compare buf to strings to perfrom actions 
 			if (strcmp(buf, "call") == 0) { ei_userCommand = MOVE_TO_DISPOSAL; }
 			if (strcmp(buf, "return") == 0) { ei_userCommand = MOVE_TO_COLLECTIONS; }
 			if (strcmp(buf, "resume") == 0) { ei_userCommand = STOP; }

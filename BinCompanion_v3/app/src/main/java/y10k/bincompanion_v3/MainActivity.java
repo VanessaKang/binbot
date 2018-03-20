@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
 
     //State Identifiers
     static final int COLLECTION = 2;
-    static final int DISPOSAL = 4;
+    static final int DISPOSAL = 3;
     static final int TRAVEL = 1;
     static final int ERROR = 0;
 
