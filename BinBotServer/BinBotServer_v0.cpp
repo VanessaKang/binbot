@@ -21,7 +21,10 @@ char buf[1024] = { 0 };
 int sock, client; 
 socklen_t opt = sizeof(rem_addr);
 
-char address[18] = "B8:27:EB:08:F9:52"; //Address of the pi NOTE: Must change for each spereate pi used  
+char address[18] = "B8:27:EB:98:DA:8B"; //Address of the pi NOTE: Must change for each spereate pi used
+
+// B8:27:EB:08:F9:52 matts  
+// 8:27:EB:98:DA:8B nicks
 
 pthread_t readThread, writeThread; 
 clock_t t, new_t; 
