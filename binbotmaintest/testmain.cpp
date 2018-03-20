@@ -22,25 +22,10 @@
 #include <bluetooth/bluetooth.h> 
 #include <bluetooth/rfcomm.h> 
 
-//
+// BINBOT SERVER
 //CONSTANT DECLARTION 
-//TODO change macros to const 
 #define STATE_NOCONNECTION 0 
 #define STATE_CONNECTED 1 
-
-
-//CONSTANTS DECLARATION 
-//TODO change macros to const 
-#define MODE 0 
-#define FILL 1
-#define BATT 2 
-#define SIG  3
-#define UPDATE_SIZE 4
-
-#define FILL_FULL 0 
-#define FILL_PARTIAL 1 
-#define FILL_NEAR_EMPTY 2 
-#define FILL_EMPTY 3 
 
 //GLOBAL VARIABLE DECLARATION 
 int connectionStatus = STATE_NOCONNECTION; 
@@ -52,9 +37,13 @@ socklen_t opt = sizeof(rem_addr);
 
 char address[18] = "B8:27:EB:30:19:A2"; //Address of the pi NOTE: Must change for each spereate pi used  
 
+// B8:27:EB:30:19:A2 matts  
+// B8:27:EB:98:DA:8B nicks
+// B8:27:EB:08:F9:52 vanessas 
+
 pthread_t readThread, writeThread; 
 clock_t t, new_t; 
-
+//
 
 //FUNCTION DECLARATION 
 void setupSocket(); 
@@ -990,67 +979,80 @@ void spawn() {
 
  //TODO Handles periodic messaging to App and error messaging
 void *writeToApp(void *ptr){
+	//CONSTANTS DECLARATION 
+	#define MODE 0 
+	#define FILL 1
+	#define BATT 2 
+	#define SIG  3
+
+	#define UPDATE_SIZE 4
+
+	#define FILL_FULL 0
+	#define FILL_PARTIAL 1
+	#define FILL_NEAR_EMPTY 2
+	#define FILL_EMPTY 3
+
+	const char ID[4] = { '0','1','2','3' };
 
 	//Initialize timer,t for first broadcast 
 	t = clock() / CLOCKS_PER_SEC;
 
 	while (connectionStatus == STATE_CONNECTED) {
 		//Set timer, new_t to compare timer, twith 
-		new_t = clock() / CLOCKS_PER_SEC; 
+		new_t = clock() / CLOCKS_PER_SEC;
 
 		//Broadcast a message every # seconds 
 		if (new_t - t > 5) {
 
 			//Create update code to pass to the App 
-			int updateMsg [UPDATE_SIZE]; 
-			
-			switch(ei_state){ 
-				case ERRORSTATE:
-					updateMsg[MODE] = ERRORSTATE;
-					break; 
-				case TRAVELSTATE: 
-					updateMsg[MODE] = TRAVELSTATE;
-					break; 
-				case COLLECTIONSTATE: 
-					updateMsg[MODE] = COLLECTIONSTATE; 
-					break; 
-				case DISPOSALSTATE: 
-					updateMsg[MODE] = DISPOSALSTATE; 
-					break; 
-			} 
-			
-			switch(1/*ci_sensorFillLevel*/){
-				case FILL_FULL: 
-					updateMsg[FILL] = FILL_FULL;
-					break; 
-				case FILL_PARTIAL: 
-					updateMsg[FILL] = FILL_PARTIAL;
-					break; 
-				case FILL_NEAR_EMPTY: 
-					updateMsg[FILL] = FILL_NEAR_EMPTY;
-					break; 
-				case FILL_EMPTY: 
-					updateMsg[FILL] = FILL_EMPTY;
-					break; 
-			} 
-			
-			//TODO Write to BinCompanion every time period status of relevent variables 
-			int bytes_wrote = write(client, updateMsg, sizeof(int)*UPDATE_SIZE); 
+			char updateMsg[UPDATE_SIZE] = { '0','0','0','0' };
+
+			switch (ei_state) {
+			case ERRORSTATE:
+				updateMsg[MODE] = ID[ERRORSTATE];
+				break;
+			case TRAVELSTATE:
+				updateMsg[MODE] = ID[TRAVELSTATE];
+				break;
+			case COLLECTIONSTATE:
+				updateMsg[MODE] = ID[COLLECTIONSTATE];
+				break;
+			case DISPOSALSTATE:
+				updateMsg[MODE] = ID[DISPOSALSTATE];
+				break;
+			}//switch(ei_state) 
+
+			if (ed_fillLevel < 10) {
+				updateMsg[FILL] = ID[FILL_FULL];
+			}
+			else if (ed_fillLevel < 17 && ed_fillLevel >= 10) {
+				updateMsg[FILL] = ID[FILL_PARTIAL];
+			}
+			else if (ed_fillLevel < 24 && ed_fillLevel >= 17) {
+				updateMsg[FILL] = ID[FILL_NEAR_EMPTY];
+			}
+			else {
+				updateMsg[FILL] = ID[FILL_EMPTY];
+			}//if ed_filllevel
+
+			 //Write to BinCompanion every time period status of relevent variables 
+			int bytes_wrote = write(client, updateMsg, UPDATE_SIZE);
 			if (bytes_wrote >= 0) {
-				printf("WRITE: wrote successfully\n"); 
-			} else { 
-				printf("WRITE: unable to write\n"); 
+				printf("WRITE: wrote successfully\n");
+			}
+			else {
+				printf("WRITE: unable to write\n");
 
 				//Unable to send likely to problem with socket 
-				connectionStatus = STATE_NOCONNECTION; 
-			} 		
+				connectionStatus = STATE_NOCONNECTION;
+			}
 			//Reset Timer, t 
 			t = clock() / CLOCKS_PER_SEC;
 		}//if 
 	}//while 
 }//writeToApp 
 
-//TODO Handles reading commands from the app 
+//Handles reading commands from the app 
 void *readFromApp(void *ptr){
 	// read data from the client
 	while (connectionStatus == STATE_CONNECTED) {
