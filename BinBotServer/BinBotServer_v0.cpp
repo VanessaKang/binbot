@@ -12,6 +12,12 @@
 #define STATE_NOCONNECTION 0 
 #define STATE_CONNECTED 1 
 
+//USER COMMAND
+#define NO_COMMAND 0
+#define SHUT_DOWN 1
+#define STOP 2
+#define MOVE_TO_COLLECTIONS 3
+#define MOVE_TO_DISPOSAL 4
 
 //GLOBAL VARIABLE DECLARATION 
 int connectionStatus = STATE_NOCONNECTION;
@@ -24,7 +30,8 @@ socklen_t opt = sizeof(rem_addr);
 char address[18] = "B8:27:EB:98:DA:8B"; //Address of the pi NOTE: Must change for each spereate pi used
 
 // B8:27:EB:08:F9:52 matts  
-// 8:27:EB:98:DA:8B nicks
+// B8:27:EB:98:DA:8B nicks
+// B8:27:EB:08:F9:52 vanessas 
 
 pthread_t readThread, writeThread; 
 clock_t t, new_t; 
@@ -32,6 +39,7 @@ clock_t t, new_t;
 //FOR TESTING//////////////////
 int ei_state = 1; 
 int ed_fillLevel = 1; 
+int ei_userCommand = NO_COMMAND;
 ///////////////////////////////
 
 //FUNCTION DECLARATION 
@@ -159,37 +167,32 @@ void *writeToApp(void *ptr){
 		if (new_t - t > 5) {
 
 			//Create update code to pass to the App 
-			char updateMsg[UPDATE_SIZE] = {'0','0','0','0'}; 
+			char updateMsg[UPDATE_SIZE] = { '0','0','0','0' };
 
-			switch(ei_state){ 
-				case ERRORSTATE:
-					updateMsg[MODE] = ID[ERRORSTATE];
-					break; 
-				case TRAVELSTATE: 
-					updateMsg[MODE] = ID[TRAVELSTATE];
-					break; 
-				case COLLECTIONSTATE: 
-					updateMsg[MODE] = ID[COLLECTIONSTATE]; 
-					break; 
-				case DISPOSALSTATE: 
-					updateMsg[MODE] = ID[DISPOSALSTATE]; 
-					break; 
-			} 
-			
-			switch(ed_fillLevel){
-				case FILL_FULL: 
-					updateMsg[FILL] = ID[FILL_FULL];
-					break; 
-				case FILL_PARTIAL: 
-					updateMsg[FILL] = ID[FILL_PARTIAL];
-					break; 
-				case FILL_NEAR_EMPTY: 
-					updateMsg[FILL] = ID[FILL_NEAR_EMPTY];
-					break; 
-				case FILL_EMPTY: 
-					updateMsg[FILL] = ID[FILL_EMPTY];
-					break; 
-			} 
+			switch (ei_state) {
+			case ERRORSTATE:
+				updateMsg[MODE] = ID[ERRORSTATE];
+				break;
+			case TRAVELSTATE:
+				updateMsg[MODE] = ID[TRAVELSTATE];
+				break;
+			case COLLECTIONSTATE:
+				updateMsg[MODE] = ID[COLLECTIONSTATE];
+				break;
+			case DISPOSALSTATE:
+				updateMsg[MODE] = ID[DISPOSALSTATE];
+				break;
+			}//switch(ei_state) 
+
+			if (ed_fillLevel < 10) {
+				updateMsg[FILL] = ID[FILL_FULL];
+			} else if (ed_fillLevel < 17 && ed_fillLevel >= 10) {
+				updateMsg[FILL] = ID[FILL_PARTIAL];
+			} else if (ed_fillLevel < 24 && ed_fillLevel >= 17) {
+				updateMsg[FILL] = ID[FILL_NEAR_EMPTY];
+			} else { 
+				updateMsg[FILL] = ID[FILL_EMPTY];
+			}//if ed_filllevel
 			
 			//TODO Write to BinCompanion every time period status of relevent variables 
 			int bytes_wrote = write(client, updateMsg, UPDATE_SIZE); 
@@ -216,11 +219,11 @@ void *readFromApp(void *ptr){
 			printf("READ: received %s\n", buf);
 
 			//TODO:Compare buf to strings to perfrom actions 
-			if (strcmp(buf, "call") == 0) {}
-			if (strcmp(buf, "return") == 0) {}
-			if (strcmp(buf, "resume") == 0) {}
-			if (strcmp(buf, "stop") == 0) {}
-			if (strcmp(buf, "shutdown") == 0) {}
+			if (strcmp(buf, "call") == 0) { ei_userCommand = MOVE_TO_DISPOSAL; }
+			if (strcmp(buf, "return") == 0) { ei_userCommand = MOVE_TO_COLLECTIONS; }
+			if (strcmp(buf, "resume") == 0) { ei_userCommand = STOP; }
+			if (strcmp(buf, "stop") == 0) { ei_userCommand = STOP; }
+			if (strcmp(buf, "shutdown") == 0) { ei_userCommand = SHUT_DOWN; }
 
 			if(strcmp(buf, "disconnect") == 0){
 				connectionStatus = STATE_NOCONNECTION;

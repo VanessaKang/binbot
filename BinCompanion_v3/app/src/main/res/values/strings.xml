@@ -45,6 +45,10 @@
     <string name="error">ERROR</string>
 
     <!--Strings for managing Fill -->
+    <string name="full">FULL</string>
+    <string name="partial_full">PARTIAL</string>
+    <string name="near_empty">SOME</string>
+    <string name="empty">EMPTY</string>
 
     <!--Strings for managing Battery -->
 

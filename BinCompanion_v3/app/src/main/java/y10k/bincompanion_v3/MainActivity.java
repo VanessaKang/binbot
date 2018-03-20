@@ -301,12 +301,16 @@ public class MainActivity extends AppCompatActivity {
         //TODO
         switch (mFillStatus){
             case FILL_FULL:
+                mFill.setText(R.string.full);
                 break;
             case FILL_NEARFULL:
+                mFill.setText(R.string.partial_full);
                 break;
             case FILL_PARTIAL:
+                mFill.setText(R.string.near_empty);
                 break;
             case FILL_EMPTY:
+                mFill.setText(R.string.empty);
                 break;
             default:
                 mFill.setText(R.string.notconnected);
