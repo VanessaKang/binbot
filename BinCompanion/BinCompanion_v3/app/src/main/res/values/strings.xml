@@ -18,7 +18,7 @@
     <string name="battery_Label">Battery Level:</string>
     <string name="rssi_Label">Signal Strength:</string>
 
-    <string name="callButton_Label">Co To Disposal</string>
+    <string name="callButton_Label">Go To Disposal</string>
     <string name="returnButton_Label">Go To Collection</string>
     <string name="resumeButton_Label">Resume</string>
     <string name="stopButton_Label">Stop</string>
@@ -39,10 +39,13 @@
     <string name="disconnected">DISCONNECTED</string>
 
     <!--Strings for managing Mode -->
-    <string name="collection">COLLECTION</string>
+    <string name="collection">AT COLLECTION</string>
     <string name="travel">TRAVEL</string>
-    <string name="disposal">DISPOSAL</string>
+    <string name="disposal">AT DISPOSAL</string>
     <string name="error">ERROR</string>
+
+    <string name="travel_collection">GOING TO COLLECTION</string>
+    <string name="travel_disposal">GOING TO DISPOSAL</string>
 
     <!--Strings for managing Fill -->
     <string name="full">FULL</string>

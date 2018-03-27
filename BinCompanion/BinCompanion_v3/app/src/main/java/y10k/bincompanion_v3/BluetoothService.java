@@ -74,7 +74,7 @@ public class BluetoothService extends Service {
     //To handle messages received by the client
     private Handler mHandler = new Handler(){
         @Override
-        public void handleMessage(Message msg) {             //TODO: TEST
+        public void handleMessage(Message msg) {
             switch(msg.what) {
                 case MESSAGE_READ:
                     //Converts Received Byte Array into Integer Array

@@ -125,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
                     //TODO: Store int to appropriate variables and update UI
                     byte[] status = resultData.getByteArray("status");
 
+                    //TODO:ADJUST FOR DESTINATION TRAVELLING TO
                     mModeStatus = Character.getNumericValue(status[0]);
                     mFillStatus = Character.getNumericValue(status[1]);
 
