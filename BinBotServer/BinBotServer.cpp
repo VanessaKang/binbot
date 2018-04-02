@@ -8,16 +8,12 @@
 #include <pthread.h> 
 #include <time.h> 
 
+////////////// NATIVE TO MAIN //////////////
+////////////////////////////////////////////
+
 //CONSTANT DECLARTION 
 #define STATE_NOCONNECTION 0 
 #define STATE_CONNECTED 1 
-
-//USER COMMAND
-#define NO_COMMAND 0
-#define SHUT_DOWN 1
-#define STOP 2
-#define MOVE_TO_COLLECTIONS 3
-#define MOVE_TO_DISPOSAL 4
 
 //GLOBAL VARIABLE DECLARATION 
 int connectionStatus = STATE_NOCONNECTION;
@@ -28,17 +24,13 @@ int sock, client;
 socklen_t opt = sizeof(rem_addr);
 
 char address[18] = "B8:27:EB:98:DA:8B"; //Address of the pi NOTE: Must change for each spereate pi used
-
-// B8:27:EB:30:19:A2 matts  
-// B8:27:EB:98:DA:8B nicks
-// B8:27:EB:08:F9:52 vanessas 
-
+										// B8:27:EB:30:19:A2 matts | B8:27:EB:98:DA:8B nick | B8:27:EB:08:F9:52 vanessas 
 pthread_t readThread, writeThread; 
 clock_t t, new_t; 
 
 //FOR TESTING//////////////////
-int ei_state = 1; 
-int ed_fillLevel = 1; 
+int ei_state = 1;
+int ed_fillLevel = 1;
 int ei_userCommand = NO_COMMAND;
 ///////////////////////////////
 
@@ -85,6 +77,9 @@ int main() {
 
 //Setup the socket on start 
 void setupSocket() {
+	//ENsure Serial port is registered 
+	system("sudo sdptool add SP");
+
 	//allocate socket
 	sock = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
 
@@ -120,14 +115,12 @@ void listen() {
 void spawn() {
 	//Create Thread for reading
 	int read_result = pthread_create(&readThread, NULL, readFromApp, NULL); 
-
 	if (read_result != 0) {
 		printf("MAIN: Read Thread Creation Failed \n"); 
 	}
 
 	//Create thread for writing 
 	int write_result = pthread_create(&writeThread, NULL, writeToApp, NULL); 
-
 	if (write_result != 0) {
 		printf("MAIN: Write Thread Creation Failed \n");
 	}
@@ -138,8 +131,6 @@ void *writeToApp(void *ptr){
 	//CONSTANTS DECLARATION 
 	#define MODE 0 
 	#define FILL 1
-	#define BATT 2 
-	#define SIG  3
 
 	#define UPDATE_SIZE 4
 
