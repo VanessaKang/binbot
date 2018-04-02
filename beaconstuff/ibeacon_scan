@@ -1,6 +1,9 @@
 #!/bin/bash
 # iBeacon Scan by Radius Networks
 
+#timeout -k 100 ./bluetoothcall 
+#timeout -k 10s ./bluetoothcall
+
 if [[ $1 == "parse" ]]; then
   packet=""
   capturing=""
@@ -32,7 +35,7 @@ if [[ $1 == "parse" ]]; then
        #/////////////////////////////////////////////////////////////
 
           if [[ $2 == "-b" ]]; then
-	    echo "$UUID $MAJOR $MINOR $POWER $RSSI"
+	    echo ",$UUID, $MAJOR, $RSSI" > beaconvalues.txt 
           else
     	    echo "UUID: $UUID MAJOR: $MAJOR MINOR: $MINOR POWER: $POWER RSSI: $RSSI"
           fi
@@ -50,8 +53,11 @@ if [[ $1 == "parse" ]]; then
     fi
   done
 else
-  sudo hcitool lescan --duplicates &
+  sudo hcitool lewladd B8:27:EB:5D:70:31
+  sudo hcitool lewladd B8:27:EB:08:F9:52
+  sudo hcitool lescan --duplicates --whitelist 1>/dev/null &
+  sleep 1
   if [ "$(pidof hcitool)" ]; then
-    sudo hcidump --raw | ./$0 parse $1
+    sudo hcidump --raw | ./$0 parse $1 $2
   fi
 fi
