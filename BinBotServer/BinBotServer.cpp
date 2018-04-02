@@ -77,7 +77,7 @@ int main() {
 
 //Setup the socket on start 
 void setupSocket() {
-	//ENsure Serial port is registered 
+	//Ensure Serial port is registered 
 	system("sudo sdptool add SP");
 
 	//allocate socket
