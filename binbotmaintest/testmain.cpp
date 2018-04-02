@@ -154,6 +154,7 @@ bool eb_lineFollow = 0;
 bool eb_binFilled = 0;
 bool eb_binEmptied = 0;
 bool eb_motorStop = 0;
+bool eb_binFullCheck = false;
 int ei_prevState = 0;
 double md_botLocation;
 int ti_temp;
@@ -190,7 +191,6 @@ int obstacleCount=1;
 //Declare time variable for timing purposes
 double runTime = 45000.0; //run time in milliseconds
 auto start = std::chrono::system_clock::now();
-
 
 //***************** Main Function ****************//
 
@@ -259,7 +259,7 @@ void *FSM(void *ptr){
             break;
             case 1: //Travel State
                 if(ei_prevState != 1){
-		    
+            
                 }
                 printf("entering travel \n");
                 travel();
@@ -294,34 +294,34 @@ void *bluetoothServer(void *ptr){
             break;
         } */
 
-		listen();
-		spawn(); 
+        listen();
+        spawn(); 
 
-		clock_t begin, end; //FOR TESTING
-		begin = clock()/CLOCKS_PER_SEC;  //FOR TESTING 
+        clock_t begin, end; //FOR TESTING
+        begin = clock()/CLOCKS_PER_SEC;  //FOR TESTING 
 
-		//While loop used to manage threads for lost connections 
-		while (connectionStatus == STATE_CONNECTED) {
-			///////FOR TESTING//////////////////////////////////////
-			end = clock()/CLOCKS_PER_SEC; 
-			if(end - begin > 5){
-				printf("MAIN: Looping\n"); 
+        //While loop used to manage threads for lost connections 
+        while (connectionStatus == STATE_CONNECTED) {
+            ///////FOR TESTING//////////////////////////////////////
+            end = clock()/CLOCKS_PER_SEC; 
+            if(end - begin > 5){
+                printf("MAIN: Looping\n"); 
                 printf("%i \n", ei_userCommand);
-				begin = clock()/CLOCKS_PER_SEC; 
-			} 
-			/////////////////////////////////////////////////////////////////////
-		}//while(connectionStatus) 
+                begin = clock()/CLOCKS_PER_SEC; 
+            } 
+            /////////////////////////////////////////////////////////////////////
+        }//while(connectionStatus) 
 
-		//Handles status when connection is lost 
-		printf("MAIN: Connection Lost\n"); 
-		
-		//Ensure Threads have closed  
-		pthread_join(readThread, NULL); 
-		pthread_join(writeThread, NULL);
+        //Handles status when connection is lost 
+        printf("MAIN: Connection Lost\n"); 
+        
+        //Ensure Threads have closed  
+        pthread_join(readThread, NULL); 
+        pthread_join(writeThread, NULL);
 
-		//close client connection 
-		close(client);
-	}//while 
+        //close client connection 
+        close(client);
+    }//while 
 }
 
 void *errorDiag(void *ptr){
@@ -352,14 +352,14 @@ void *errorDiag(void *ptr){
 void *Data(void *ptr){
     while(1){
         usleep(250000);
-    	if(eb_lineFollow == TRUE && ei_state == TRAVELSTATE && eb_motorStop == FALSE){
+        if(eb_lineFollow == TRUE && ei_state == TRAVELSTATE && eb_motorStop == FALSE){
                 //printf("linefollowing \n");
-        		writeData(19);
-    	}
-    	else if(eb_lineFollow == FALSE || eb_motorStop == TRUE){
+                writeData(19);
+        }
+        else if(eb_lineFollow == FALSE || eb_motorStop == TRUE){
             //printf("stopping \n");
-    		writeData(20);
-    	}
+            writeData(20);
+        }
         if(ei_state == COLLECTIONSTATE || ei_state == DISPOSALSTATE){
             printf("reading sensor values \n");
             writeData(4);
@@ -441,99 +441,98 @@ void travel(){
     
     int disposalRSSI [10] = {-70,-70,-70,-70,-70,-70,-70,-70,-70,-70};
     while (ei_userCommand == NO_COMMAND && ei_error == 0)
-    {	
-	std::string str1 (" 0");
-	std::string ID("66666666-6666-6666-6666-666666666666");
-	usleep(100000);
-	std::ifstream beaconFile;
+    {   
+    std::string str1 (" 0");
+    std::string ID("66666666-6666-6666-6666-666666666666");
+    usleep(100000);
+    std::ifstream beaconFile;
   std::vector<std::string> values;
   const int MAXSIZE = 100;
   char thisVal[MAXSIZE];
-	if (eb_nextDest == COLLECTION){
+    if (eb_nextDest == COLLECTION){
      std::cout << "Update with CollectionRssi" << "\n";
-			beaconFile.open("beaconvaluesCol.txt");
-		if(!beaconFile){
-			std::cout << "Unable to open beaconFile";
-			exit(1);
-		}
-		
-		while(beaconFile.getline(thisVal,MAXSIZE,',')){
-			values.push_back(thisVal);
-		}
-		beaconFile.close();
-		//std::cout << values.size() << "\n";
-	}else if(eb_nextDest == DISPOSAL){
+            beaconFile.open("beaconvaluesCol.txt");
+        if(!beaconFile){
+            std::cout << "Unable to open beaconFile";
+            exit(1);
+        }
+        
+        while(beaconFile.getline(thisVal,MAXSIZE,',')){
+            values.push_back(thisVal);
+        }
+        beaconFile.close();
+        //std::cout << values.size() << "\n";
+    }else if(eb_nextDest == DISPOSAL){
      std::cout << "Update with DisposalRssi" << "\n";
-			beaconFile.open("beaconvaluesDis.txt");
-		if(!beaconFile){
-			std::cout << "Unable to open beaconFile";
-			exit(1);
-		}
+            beaconFile.open("beaconvaluesDis.txt");
+        if(!beaconFile){
+            std::cout << "Unable to open beaconFile";
+            exit(1);
+        }
 
-		while(beaconFile.getline(thisVal,MAXSIZE,',')){
-			values.push_back(thisVal);
-		}
-		beaconFile.close();
-		//std::cout << values.size() << "\n";
-	}
+        while(beaconFile.getline(thisVal,MAXSIZE,',')){
+            values.push_back(thisVal);
+        }
+        beaconFile.close();
+        //std::cout << values.size() << "\n";
+    }
     if(values.size() == 0){     //protects against seg faults by trying to access
         break;                  //an empty array
     }
 
-	
+    
         for(int i = 0; i<values.size();i++){
            std::cout << values[i] << "\n";
         }
-	
-	if(values[1].compare(ID) == 0){
-		int major = stoi(values[2]);
-		if(major == 0 && eb_nextDest == COLLECTION){
-			for(int i =9; i>=1;i--){
+    
+    if(values[1].compare(ID) == 0){
+        int major = stoi(values[2]);
+        if(major == 0 && eb_nextDest == COLLECTION){
+            for(int i =9; i>=1;i--){
       collectRSSI[i] = collectRSSI[i-1];
       }
       collectRSSI[0] = stoi(values[3]);
-			std::cout << "array" << collectRSSI[0] << " " << collectRSSI[1] << " " << collectRSSI[2] << " " << collectRSSI[3] << " " << collectRSSI[4] << " " << collectRSSI[5] << " " << collectRSSI[6] << " " << collectRSSI[7] << " " << collectRSSI[8] << " " << collectRSSI[9] << "\n";
+            std::cout << "array" << collectRSSI[0] << " " << collectRSSI[1] << " " << collectRSSI[2] << " " << collectRSSI[3] << " " << collectRSSI[4] << " " << collectRSSI[5] << " " << collectRSSI[6] << " " << collectRSSI[7] << " " << collectRSSI[8] << " " << collectRSSI[9] << "\n";
       //printf("Going to Collection beacon \n");
-			int sum = 0;
+            int sum = 0;
       for (int i = 0; i<10 ; i++){
         sum = sum+collectRSSI[i];
       }
       int av = sum/10;
       std::cout << "Average" << av << "\n";
-	 		if(av > ATDESTRSSI){
-
-				ei_prevState = TRAVELSTATE;
-				ei_state = COLLECTIONSTATE;
-				eb_lineFollow = FALSE;
-				printf("Arrived at Collection Zone \n");
-				break;
-			}
-		}
-		else if(major == 1 && eb_nextDest == DISPOSAL){
-			//int disposalRSSI = stoi(values[3]);
-			//std::cout << disposalRSSI << "\n";
+            if(av > ATDESTRSSI){
+                ei_prevState = TRAVELSTATE;
+                ei_state = COLLECTIONSTATE;
+                eb_lineFollow = FALSE;
+                printf("Arrived at Collection Zone \n");
+                break;
+            }
+        }
+        else if(major == 1 && eb_nextDest == DISPOSAL){
+            //int disposalRSSI = stoi(values[3]);
+            //std::cout << disposalRSSI << "\n";
       printf("Going to Disposal beacon \n");
       for(int i =9; i>=1;i--){
       disposalRSSI[i] = disposalRSSI[i-1];
       }
       disposalRSSI[0] = stoi(values[3]);
-			std::cout << "array" << disposalRSSI[0] << " " << disposalRSSI[1] << " " << disposalRSSI[2] << " " << disposalRSSI[3] << " " << disposalRSSI[4] << " " << disposalRSSI[5] << " " << disposalRSSI[6] << " " << disposalRSSI[7] << " " << disposalRSSI[8] << " " << disposalRSSI[9] << "\n";
-      //printf("Going to Collection beacon \n");
-			int sum = 0;
+            std::cout << "array" << disposalRSSI[0] << " " << disposalRSSI[1] << " " << disposalRSSI[2] << " " << disposalRSSI[3] << " " << disposalRSSI[4] << " " << disposalRSSI[5] << " " << disposalRSSI[6] << " " << disposalRSSI[7] << " " << disposalRSSI[8] << " " << disposalRSSI[9] << "\n";
+      //printf("Going to Disposal beacon \n");
+            int sum = 0;
       for (int i = 0; i<10 ; i++){
         sum = sum+disposalRSSI[i];
       }
       int av = sum/10;
       std::cout << "Average" << av << "\n";
-			if(av > ATDESTRSSI){
-        ei_prevState = TRAVELSTATE;
-				ei_state = DISPOSALSTATE;
-				eb_lineFollow = 0;
-				printf("Arrived at Disposal Zone \n");
-				break;
-			}
-		}	
-	}
+            if(av > ATDESTRSSI){
+                ei_prevState = TRAVELSTATE;
+                ei_state = DISPOSALSTATE;
+                eb_lineFollow = 0;
+                printf("Arrived at Disposal Zone \n");
+                break;
+            }
+        }   
+    }
     }
     if (ei_error != 0)
     {
@@ -584,16 +583,44 @@ void travel(){
 
 void collection(){
     printf("Collection state reached \n");
+    int fillLevel[3] = {25,25,25};
+    int avFill;
+    int sum;
+    int fillCheckStart;
     while ((eb_binFilled == FALSE) && (ei_userCommand == NO_COMMAND)){
-        usleep(500000);
+        //usleep(500000);
         //printf("Collecting Mode \n");
         //Can replace if statement with function
         //that implements more accurate bin full function
-        printf("level val %i %\n", ci_sensorFill);
-        if(ci_sensorFill <= BINFULLDIST){
-            printf("Bin has been filled \n");
-            eb_binFilled = TRUE;
+        
+        for(int i =2; i>=1;i--){
+          fillLevel[i] = fillLevel[i-1];
         }
+        fillLevel[0] = ci_sensorFill;
+        sum = 0;
+        for (int i = 0; i<3 ; i++){
+          sum = sum+fillLevel[i];
+        }
+        avFill = sum/3;
+        //printf("level val %i %\n", ci_sensorFill);
+        if(avFill <= BINFULLDIST){
+            //printf("Check if bin has been filled \n");
+            if (eb_binFullCheck == FALSE){
+              fillCheckStart = timeFromStart(start);
+              eb_binFullCheck = TRUE;
+            }
+            //printf("timeFromStart(start): %i ", timeFromStart(start));
+            //printf("fillCheckStart: %i \n", fillCheckStart);
+            if((timeFromStart(start) - fillCheckStart) >= 2000 && (avFill <= BINFULLDIST) && (eb_binFullCheck = TRUE)){
+              printf("Bin full and successfully waited 2sec ");
+              eb_binFullCheck = FALSE;
+              eb_binFilled = TRUE;
+            }else if ((timeFromStart(start) - fillCheckStart) >= 2000 && (avFill >= BINFULLDIST) && (eb_binFullCheck = TRUE)){
+              printf("Bin not full and successfully waited 2sec, reset collection");
+              eb_binFullCheck = FALSE;
+              eb_binFilled = FALSE;
+            } 
+        }  
         if (ei_error != 0)
         {
             ei_prevState = ei_state;
@@ -840,7 +867,7 @@ void showIP(){
     }
 }
 
-void dataCollection(){
+/*void dataCollection(){
     printf("Data Thread is running\n");
     while(1){
     //Turn LED ON
@@ -897,7 +924,7 @@ void dataCollection(){
             break;
         }
     }
-}
+}*/
 
 void printHardwareValues(){
     printf("Front sensor value: ");
@@ -929,163 +956,163 @@ double timeFromStart(auto y){
 
 //Setup the socket on start 
 void setupSocket() {
-	//allocate socket
-	sock = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+    //allocate socket
+    sock = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
 
-	//bind socket to port of BluetoothAdapter 
-	loc_addr.rc_family = AF_BLUETOOTH;
-	str2ba(address, &loc_addr.rc_bdaddr);
-	loc_addr.rc_channel = (uint8_t)1;
+    //bind socket to port of BluetoothAdapter 
+    loc_addr.rc_family = AF_BLUETOOTH;
+    str2ba(address, &loc_addr.rc_bdaddr);
+    loc_addr.rc_channel = (uint8_t)1;
 
-	bind(sock, (struct sockaddr *) &loc_addr, sizeof(loc_addr));
+    bind(sock, (struct sockaddr *) &loc_addr, sizeof(loc_addr));
 }
 
 //set socket to listen for connection requests 
 void listen() {
-	//put socket into listening mode (blocking call) 
-	printf("MAIN: Listening...\n");
-	listen(sock, 1);
+    //put socket into listening mode (blocking call) 
+    printf("MAIN: Listening...\n");
+    listen(sock, 1);
 
-	//Accept a connection 
-	client = accept(sock, (struct sockaddr *) &rem_addr, &opt);
+    //Accept a connection 
+    client = accept(sock, (struct sockaddr *) &rem_addr, &opt);
 
-	//Print connection success 
-	ba2str(&rem_addr.rc_bdaddr, buf); 
-	printf("MAIN: accepted connection from %s\n", buf); 
+    //Print connection success 
+    ba2str(&rem_addr.rc_bdaddr, buf); 
+    printf("MAIN: accepted connection from %s\n", buf); 
 
-	//clears byte array 
-	memset(buf, 0, sizeof(buf)); 
-	
-	//Alter connection status to display succcess 
-	connectionStatus = STATE_CONNECTED; 
+    //clears byte array 
+    memset(buf, 0, sizeof(buf)); 
+    
+    //Alter connection status to display succcess 
+    connectionStatus = STATE_CONNECTED; 
 }//listen 
 
 //Spawn Threads to handle connection read and write 
 void spawn() {
-	//Create Thread for reading
-	int read_result = pthread_create(&readThread, NULL, readFromApp, NULL); 
+    //Create Thread for reading
+    int read_result = pthread_create(&readThread, NULL, readFromApp, NULL); 
 
-	if (read_result != 0) {
-		printf("MAIN: Read Thread Creation Failed \n"); 
-	}
+    if (read_result != 0) {
+        printf("MAIN: Read Thread Creation Failed \n"); 
+    }
 
-	//Create thread for writing 
-	int write_result = pthread_create(&writeThread, NULL, writeToApp, NULL); 
+    //Create thread for writing 
+    int write_result = pthread_create(&writeThread, NULL, writeToApp, NULL); 
 
-	if (write_result != 0) {
-		printf("MAIN: Write Thread Creation Failed \n");
-	}
+    if (write_result != 0) {
+        printf("MAIN: Write Thread Creation Failed \n");
+    }
 }//spawn 
 
  //TODO Handles periodic messaging to App and error messaging
 void *writeToApp(void *ptr){
-	//CONSTANTS DECLARATION 
-	#define MODE 0 
-	#define FILL 1
-	#define BATT 2 
-	#define SIG  3
+    //CONSTANTS DECLARATION 
+    #define MODE 0 
+    #define FILL 1
+    #define BATT 2 
+    #define SIG  3
 
-	#define UPDATE_SIZE 4
+    #define UPDATE_SIZE 4
 
-	#define FILL_FULL 0
-	#define FILL_PARTIAL 1
-	#define FILL_NEAR_EMPTY 2
-	#define FILL_EMPTY 3
+    #define FILL_FULL 0
+    #define FILL_PARTIAL 1
+    #define FILL_NEAR_EMPTY 2
+    #define FILL_EMPTY 3
 
-	const char ID[4] = { '0','1','2','3' };
+    const char ID[4] = { '0','1','2','3' };
 
-	//Initialize timer,t for first broadcast 
-	t = clock() / CLOCKS_PER_SEC;
+    //Initialize timer,t for first broadcast 
+    t = clock() / CLOCKS_PER_SEC;
 
-	while (connectionStatus == STATE_CONNECTED) {
-		//Set timer, new_t to compare timer, twith 
-		new_t = clock() / CLOCKS_PER_SEC;
+    while (connectionStatus == STATE_CONNECTED) {
+        //Set timer, new_t to compare timer, twith 
+        new_t = clock() / CLOCKS_PER_SEC;
 
-		//Broadcast a message every # seconds 
-		if (new_t - t > 5) {
+        //Broadcast a message every # seconds 
+        if (new_t - t > 5) {
 
-			//Create update code to pass to the App 
-			char updateMsg[UPDATE_SIZE] = { '0','0','0','0' };
+            //Create update code to pass to the App 
+            char updateMsg[UPDATE_SIZE] = { '0','0','0','0' };
 
-			switch (ei_state) {
-			case ERRORSTATE:
-				updateMsg[MODE] = ID[ERRORSTATE];
-				break;
-			case TRAVELSTATE:
-				updateMsg[MODE] = ID[TRAVELSTATE];
-				break;
-			case COLLECTIONSTATE:
-				updateMsg[MODE] = ID[COLLECTIONSTATE];
-				break;
-			case DISPOSALSTATE:
-				updateMsg[MODE] = ID[DISPOSALSTATE];
-				break;
-			}//switch(ei_state) 
+            switch (ei_state) {
+            case ERRORSTATE:
+                updateMsg[MODE] = ID[ERRORSTATE];
+                break;
+            case TRAVELSTATE:
+                updateMsg[MODE] = ID[TRAVELSTATE];
+                break;
+            case COLLECTIONSTATE:
+                updateMsg[MODE] = ID[COLLECTIONSTATE];
+                break;
+            case DISPOSALSTATE:
+                updateMsg[MODE] = ID[DISPOSALSTATE];
+                break;
+            }//switch(ei_state) 
 
-			if (ed_fillLevel < 10) {
-				updateMsg[FILL] = ID[FILL_FULL];
-			}
-			else if (ed_fillLevel < 17 && ed_fillLevel >= 10) {
-				updateMsg[FILL] = ID[FILL_PARTIAL];
-			}
-			else if (ed_fillLevel < 24 && ed_fillLevel >= 17) {
-				updateMsg[FILL] = ID[FILL_NEAR_EMPTY];
-			}
-			else {
-				updateMsg[FILL] = ID[FILL_EMPTY];
-			}//if ed_filllevel
+            if (ed_fillLevel < 10) {
+                updateMsg[FILL] = ID[FILL_FULL];
+            }
+            else if (ed_fillLevel < 17 && ed_fillLevel >= 10) {
+                updateMsg[FILL] = ID[FILL_PARTIAL];
+            }
+            else if (ed_fillLevel < 24 && ed_fillLevel >= 17) {
+                updateMsg[FILL] = ID[FILL_NEAR_EMPTY];
+            }
+            else {
+                updateMsg[FILL] = ID[FILL_EMPTY];
+            }//if ed_filllevel
 
-			 //Write to BinCompanion every time period status of relevent variables 
-			int bytes_wrote = write(client, updateMsg, UPDATE_SIZE);
-			if (bytes_wrote >= 0) {
-				printf("WRITE: wrote successfully\n");
-			}
-			else {
-				printf("WRITE: unable to write\n");
+             //Write to BinCompanion every time period status of relevent variables 
+            int bytes_wrote = write(client, updateMsg, UPDATE_SIZE);
+            if (bytes_wrote >= 0) {
+                printf("WRITE: wrote successfully\n");
+            }
+            else {
+                printf("WRITE: unable to write\n");
 
-				//Unable to send likely to problem with socket 
-				connectionStatus = STATE_NOCONNECTION;
-			}
-			//Reset Timer, t 
-			t = clock() / CLOCKS_PER_SEC;
-		}//if 
-	}//while 
+                //Unable to send likely to problem with socket 
+                connectionStatus = STATE_NOCONNECTION;
+            }
+            //Reset Timer, t 
+            t = clock() / CLOCKS_PER_SEC;
+        }//if 
+    }//while 
 }//writeToApp 
 
 //Handles reading commands from the app 
 void *readFromApp(void *ptr){
-	// read data from the client
-	while (connectionStatus == STATE_CONNECTED) {
-		int bytes_read = read(client, buf, sizeof(buf));
-		if (bytes_read > 0) {
-			printf("READ: received %s\n", buf);
+    // read data from the client
+    while (connectionStatus == STATE_CONNECTED) {
+        int bytes_read = read(client, buf, sizeof(buf));
+        if (bytes_read > 0) {
+            printf("READ: received %s\n", buf);
 
-			//TODO:Compare buf to strings to perfrom actions 
-			if (strcmp(buf, "call") == 0) {ei_userCommand = MOVE_TO_DISPOSAL;}
-			if (strcmp(buf, "return") == 0) { ei_userCommand = MOVE_TO_COLLECTIONS;}
-			if (strcmp(buf, "resume") == 0) {ei_userCommand = STOP;}
-			if (strcmp(buf, "stop") == 0) { ei_userCommand = STOP;}
-			if (strcmp(buf, "shutdown") == 0) { ei_userCommand = SHUT_DOWN;}
+            //TODO:Compare buf to strings to perfrom actions 
+            if (strcmp(buf, "call") == 0) {ei_userCommand = MOVE_TO_DISPOSAL;}
+            if (strcmp(buf, "return") == 0) { ei_userCommand = MOVE_TO_COLLECTIONS;}
+            if (strcmp(buf, "resume") == 0) {ei_userCommand = STOP;}
+            if (strcmp(buf, "stop") == 0) { ei_userCommand = STOP;}
+            if (strcmp(buf, "shutdown") == 0) { ei_userCommand = SHUT_DOWN;}
 
-			if(strcmp(buf, "disconnect") == 0){
-				connectionStatus = STATE_NOCONNECTION;
-			}
-	
-			//clears byte array 
-			memset(buf, 0, sizeof(buf));  
-		} else {
-		 	printf("READ: failed to read\n"); 
-			connectionStatus = STATE_NOCONNECTION; 
-		} 
-	}//while
+            if(strcmp(buf, "disconnect") == 0){
+                connectionStatus = STATE_NOCONNECTION;
+            }
+    
+            //clears byte array 
+            memset(buf, 0, sizeof(buf));  
+        } else {
+            printf("READ: failed to read\n"); 
+            connectionStatus = STATE_NOCONNECTION; 
+        } 
+    }//while
 }//readFromApp 
 //PSUEDOCODE
 /* 
 1. On start, set up socket and enter listen state
 2. On accept, manange two threads
     - readThread: listens to recieve commands from app and reacts to one of five 
-	scenarios
-	- writeThread: writes to app perodically to inform of current status of BinBot; also
-	needs to write to app in case an error occurs (must inform type of error)
+    scenarios
+    - writeThread: writes to app perodically to inform of current status of BinBot; also
+    needs to write to app in case an error occurs (must inform type of error)
 3. on cancel, close socket and set to listen for new connection again 
 */
