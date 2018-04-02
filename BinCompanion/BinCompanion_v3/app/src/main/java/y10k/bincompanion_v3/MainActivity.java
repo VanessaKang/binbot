@@ -215,6 +215,11 @@ public class MainActivity extends AppCompatActivity {
     }//onCreate
 
     @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         if(isBound){
