@@ -112,7 +112,7 @@ double timeFromStart(auto y);
 #define FTHRESH 40
 #define LRTHRESH 25
 #define ALLOWEDMOVES 10
-#define ATDESTRSSI -50
+#define ATDESTRSSI -45
 
 
 //State Constants
@@ -481,9 +481,9 @@ void travel(){
     }
 
     
-        for(int i = 0; i<values.size();i++){
-           std::cout << values[i] << "\n";
-        }
+    for(int i = 0; i<values.size();i++){
+        std::cout << values[i] << "\n";
+    }
     
     if(values[1].compare(ID) == 0){
         int major = stoi(values[2]);
@@ -516,9 +516,9 @@ void travel(){
       disposalRSSI[i] = disposalRSSI[i-1];
       }
       disposalRSSI[0] = stoi(values[3]);
-            std::cout << "array" << disposalRSSI[0] << " " << disposalRSSI[1] << " " << disposalRSSI[2] << " " << disposalRSSI[3] << " " << disposalRSSI[4] << " " << disposalRSSI[5] << " " << disposalRSSI[6] << " " << disposalRSSI[7] << " " << disposalRSSI[8] << " " << disposalRSSI[9] << "\n";
-      //printf("Going to Disposal beacon \n");
-            int sum = 0;
+        std::cout << "array" << disposalRSSI[0] << " " << disposalRSSI[1] << " " << disposalRSSI[2] << " " << disposalRSSI[3] << " " << disposalRSSI[4] << " " << disposalRSSI[5] << " " << disposalRSSI[6] << " " << disposalRSSI[7] << " " << disposalRSSI[8] << " " << disposalRSSI[9] << "\n";
+
+        int sum = 0;
       for (int i = 0; i<10 ; i++){
         sum = sum+disposalRSSI[i];
       }
