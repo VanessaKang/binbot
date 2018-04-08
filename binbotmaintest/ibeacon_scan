@@ -42,7 +42,7 @@ if [[ $1 == "parse" ]]; then
               echo ",$UUID, $MAJOR, $RSSI" > beaconvaluesCol.txt
             fi
           else
-		echo "UUID: $UUID MAJOR: $MAJOR MINOR: $MINOR POWER: $POWER RSSI: $RSSI"
+		    echo "UUID: $UUID MAJOR: $MAJOR MINOR: $MINOR POWER: $POWER RSSI: $RSSI"
           fi
         fi
         capturing=""
