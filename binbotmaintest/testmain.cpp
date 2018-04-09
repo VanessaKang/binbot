@@ -999,6 +999,9 @@ double timeFromStart(auto y){
 
 //Setup the socket on start 
 void setupSocket() {
+	// Setup Raspberry Pi to  build sockets 
+	system("sudo sdptool add SP"); 
+
     //allocate socket
     sock = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
 
