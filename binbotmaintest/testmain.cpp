@@ -141,7 +141,7 @@ unsigned char ultraVal;
 
 
 //declare global variables--------
-int ei_state= COLLECTIONSTATE;
+int ei_state= DISPOSALSTATE;
 double ed_fillLevel;
 double vd_battVoltage;
 int ei_error=0;
@@ -154,7 +154,8 @@ bool eb_lineFollow = 0;
 bool eb_binFilled = 0;
 bool eb_binEmptied = 0;
 bool eb_motorStop = 0;
-bool eb_binFullCheck = false;
+bool eb_binFullCheck = false;      //used for the averaging of fill sensor (collection())
+bool eb_binEmptyCheck = false;      //used for the averaging of fill sensor (disposal())
 int ei_prevState = 0;
 double md_botLocation;
 int ti_temp;
@@ -675,12 +676,40 @@ void collection(){
 }
 
 void disposal(){
+    printf("Collection state reached \n");
+    int fillLevel[3] = {3,3,3};
+    int avFill;
+    int sum;
+    int fillCheckStart;
     while( (eb_binEmptied == FALSE) && (ei_userCommand == NO_COMMAND) ){
         //Stay still, wait for garbage to be disposed
         //send message to app, error state will bring back to disposal state
-        if(ci_sensorFill >= BINEMPTYDIST){
-            printf("Bin has been emptied \n");
-            eb_binEmptied= TRUE;
+        for(int i =2; i>=1;i--){
+          fillLevel[i] = fillLevel[i-1];
+        }
+        fillLevel[0] = ci_sensorFill;
+        sum = 0;
+        for (int i = 0; i<3 ; i++){
+          sum = sum+fillLevel[i];
+        }
+        avFill = sum/3;
+        
+        if(avFill >= BINEMPTYDIST){
+            if (eb_binEmptyCheck == FALSE){
+              fillCheckStart = timeFromStart(start);
+              eb_binEmptyCheck = TRUE;
+            }
+            //printf("timeFromStart(start): %i ", timeFromStart(start));
+            //printf("fillCheckStart: %i \n", fillCheckStart);
+            if((timeFromStart(start) - fillCheckStart) >= 2000 && (avFill >= BINFULLDIST) && (eb_binEmptyCheck = TRUE)){
+              printf("Bin full and successfully waited 2sec ");
+              eb_binEmptyCheck = FALSE;
+              eb_binEmptied = TRUE;
+            }else if ((timeFromStart(start) - fillCheckStart) >= 2000 && (avFill <= BINFULLDIST) && (eb_binEmptyCheck = TRUE)){
+              printf("Bin not full and successfully waited 2sec, reset collection");
+              eb_binEmptyCheck = FALSE;
+              eb_binEmptied = FALSE;
+            } 
         }
         if(ei_error != 0){
             ei_prevState = ei_state;
