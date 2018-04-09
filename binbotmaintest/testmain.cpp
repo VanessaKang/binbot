@@ -141,7 +141,7 @@ unsigned char ultraVal;
 
 
 //declare global variables--------
-int ei_state= DISPOSALSTATE;
+int ei_state= COLLECTIONSTATE;
 double ed_fillLevel;
 double vd_battVoltage;
 int ei_error=0;
@@ -216,14 +216,14 @@ int iret1FSM, iret2bluetoothServer, iret3errorDiag, iret4Data;
 //create independent threads to run each function
 iret1FSM = pthread_create( &thread1, NULL, FSM, NULL);
 iret2bluetoothServer = pthread_create( &thread2, NULL, bluetoothServer, NULL);
-//iret3errorDiag = pthread_create( &thread3, NULL, errorDiag, NULL);
+iret3errorDiag = pthread_create( &thread3, NULL, errorDiag, NULL);
 iret4Data = pthread_create( &thread4, NULL, Data, NULL);
 
 
 //wait for each thread to finish before completing program
 pthread_join( thread1, NULL);
 pthread_join( thread2, NULL);
-//pthread_join( thread3, NULL);
+pthread_join( thread3, NULL);
 pthread_join( thread4, NULL);
 
 //print to console to confirm program has finished
@@ -256,7 +256,7 @@ void *FSM(void *ptr){
                 //thread so we just need to check the global variable indicating errors (ei_error?)
                 }
                 errorState();
-                ei_prevState = 0;
+                //ei_prevState = 0;
             break;
             case 1: //Travel State
                 if(ei_prevState != 1){
@@ -336,10 +336,10 @@ void *errorDiag(void *ptr){
         ultraSensDiag();
         motorDiag();
         connectionDiag();
-        if(timeFromStart(start) > runTime){
+        /*if(timeFromStart(start) > runTime){
             printf("Diag has exited \n");
             break;
-        }
+        }*/
     }
     //std::cout << "Please enter the Value of es_commandString: ";
     //std::cin >> es_commandString;
@@ -361,7 +361,7 @@ void *Data(void *ptr){
             //printf("stopping \n");
             writeData(20);
         }
-        if(ei_state == COLLECTIONSTATE || ei_state == DISPOSALSTATE){
+        if(ei_state == COLLECTIONSTATE || ei_state == DISPOSALSTATE || ei_state == ERRORSTATE){
             printf("reading sensor values \n");
             writeData(4);
             delay(I2CDELAY);
@@ -369,7 +369,7 @@ void *Data(void *ptr){
             if(ci_sensorFill==0 or ci_sensorFill>255){
                 ci_sensorFill = 255;
             }
-            //printf("SensorFill: %i \n",ci_sensorFill);
+            printf("SensorFill: %i \n",ci_sensorFill);
         }
         
     }
@@ -433,6 +433,15 @@ void writeData(int val){
 
 void errorState(){
     printf("Error State\n");
+    if(ei_error != 0){
+        printf("do the stuff\n");
+        eb_lineFollow = 0;
+        usleep(1000000);
+
+    }
+    else{
+        ei_state=ei_prevState;
+    }
 }
 
 void travel(){
@@ -852,7 +861,12 @@ void immobileDiag(){
 
 }
 void noBinDiag(){
-
+ if(ci_sensorFill >= 32 && ei_error==FALSE){
+        ei_error = TRUE;
+    }
+    if(ci_sensorFill < 31 && ei_error==TRUE){
+        ei_error ==FALSE;
+    }
 }
 void ultraSensDiag(){
 
