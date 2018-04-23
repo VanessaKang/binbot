@@ -9,8 +9,33 @@
 #include <time.h> 
 
 ////////////// NATIVE TO MAIN //////////////
-////////////////////////////////////////////
+//BIN SENSOR CONSTANTS
+#define BINFULLDIST 5
+#define BINEMPTYDIST 25
 
+//nextDest Constants
+#define COLLECTION 0
+#define DISPOSAL 1
+
+//State Constants 
+#define ERRORSTATE 0 
+#define TRAVELSTATE 1
+#define COLLECTIONSTATE 2
+#define DISPOSALSTATE 3
+
+//USER COMMAND
+#define NO_COMMAND 0
+#define SHUT_DOWN 1
+#define STOP 2
+#define MOVE_TO_COLLECTIONS 3
+#define MOVE_TO_DISPOSAL 4
+
+int ei_state;
+int avFill;
+int ei_userCommand;
+
+bool eb_nextDest;
+////////////////////////////////////////////
 //CONSTANT DECLARTION 
 #define STATE_NOCONNECTION 0 
 #define STATE_CONNECTED 1 
@@ -28,12 +53,6 @@ char address[18] = "B8:27:EB:98:DA:8B"; //Address of the pi NOTE: Must change fo
 pthread_t readThread, writeThread; 
 clock_t t, new_t; 
 
-//FOR TESTING//////////////////
-int ei_state = 1;
-int ed_fillLevel = 1;
-int ei_userCommand = NO_COMMAND;
-///////////////////////////////
-
 //FUNCTION DECLARATION 
 void setupSocket(); 
 void listen(); 
@@ -45,7 +64,7 @@ void *readFromApp(void *ptr);
 int main() {
 	setupSocket(); 
 
-	while (true) {
+	while (1) {
 		listen(); 
 		spawn(); 
 
@@ -129,22 +148,17 @@ void spawn() {
  //Handles periodic messaging to App and error messaging
 void *writeToApp(void *ptr){
 	//CONSTANTS DECLARATION 
-	#define MODE 0 
-	#define FILL 1
+	#define STATE 0 
+    #define DESTINATION 1
+	#define ERRORCODE 2
+	#define FILL 3
 
 	#define UPDATE_SIZE 4
-
-	#define ERRORSTATE 0 
-	#define TRAVELSTATE 1
-	#define COLLECTIONSTATE 2
-	#define DISPOSALSTATE 3
 
 	#define FILL_FULL 0
 	#define FILL_PARTIAL 1
 	#define FILL_NEAR_EMPTY 2
 	#define FILL_EMPTY 3
-
-	const char ID[4] = { '0','1','2','3' }; 
 
 	//Initialize timer,t for first broadcast 
 	t = clock() / CLOCKS_PER_SEC;
@@ -157,12 +171,14 @@ void *writeToApp(void *ptr){
 		if (new_t - t > 5) {
 
 			//Create update code to pass to the App 
-			char updateMsg[UPDATE_SIZE] = { '0','0','0','0' };
+			char updateMsg[UPDATE_SIZE] = { 0 };
+
+			char ID[4] = { '0', '1', '2', '3' };
 
 			//TODO
 			/* 
-			USE ed_nextDest to provide feedback for destination of travel
-			INform user if we are stopped/resume
+			Use ed_nextDest to provide feedback for destination of travel
+			Inform user if we are stopped/resume
 			*/
 			switch (ei_state) {
 			case ERRORSTATE:
@@ -179,11 +195,17 @@ void *writeToApp(void *ptr){
 				break;
 			}//switch(ei_state) 
 
-			if (ed_fillLevel < 10) {
+			if (eb_nextDest = COLLECTION) {
+				updateMsg[DESTINATION] = ID[COLLECTION]; 
+			else if (eb_nextDest = DISPOSAL){ }
+				updateMsg[DESTINATION] = ID[DISPOSAL]; 
+			}
+
+			if (avFill < 10) {
 				updateMsg[FILL] = ID[FILL_FULL];
-			} else if (ed_fillLevel < 17 && ed_fillLevel >= 10) {
+			} else if (avFill < 17 && avFill >= 10) {
 				updateMsg[FILL] = ID[FILL_PARTIAL];
-			} else if (ed_fillLevel < 24 && ed_fillLevel >= 17) {
+			} else if (avFill < 24 && avFill >= 17) {
 				updateMsg[FILL] = ID[FILL_NEAR_EMPTY];
 			} else { 
 				updateMsg[FILL] = ID[FILL_EMPTY];
