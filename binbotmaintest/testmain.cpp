@@ -432,7 +432,7 @@ void writeData(int val){
 
 
 void errorState(){
-    printf("Error State\n");
+    printf("Error State\n");s
     if(ei_error != 0){
         printf("do the stuff\n");
         eb_lineFollow = 0;
@@ -1055,8 +1055,8 @@ void *writeToApp(void *ptr){
     //CONSTANTS DECLARATION 
     #define MODE 0 
     #define FILL 1
-    #define BATT 2 
-    #define SIG  3
+    #define ERRORCODE 2 
+    #define DESTINATION  3
 
     #define UPDATE_SIZE 4
 
@@ -1078,7 +1078,7 @@ void *writeToApp(void *ptr){
         if (new_t - t > 5) {
 
             //Create update code to pass to the App 
-            char updateMsg[UPDATE_SIZE] = { '0','0','0','0' };
+            char updateMsg[UPDATE_SIZE] = { 0 };
 
             switch (ei_state) {
             case ERRORSTATE:
@@ -1095,18 +1095,25 @@ void *writeToApp(void *ptr){
                 break;
             }//switch(ei_state) 
 
-            if (ed_fillLevel < 10) {
-                updateMsg[FILL] = ID[FILL_FULL];
-            }
-            else if (ed_fillLevel < 17 && ed_fillLevel >= 10) {
-                updateMsg[FILL] = ID[FILL_PARTIAL];
-            }
-            else if (ed_fillLevel < 24 && ed_fillLevel >= 17) {
-                updateMsg[FILL] = ID[FILL_NEAR_EMPTY];
-            }
-            else {
-                updateMsg[FILL] = ID[FILL_EMPTY];
-            }//if ed_filllevel
+			if (eb_nextDest = COLLECTION) {
+				updateMsg[DESTINATION] = ID[COLLECTION];
+			} 
+			else if (eb_nextDest = DISPOSAL) {
+				updateMsg[DESTINATION] = ID[DISPOSAL];
+			}//if eb_extDest
+
+			if (avFill < 10) {
+				updateMsg[FILL] = ID[FILL_FULL];
+			}
+			else if (avFill < 17 && avFill >= 10) {
+				updateMsg[FILL] = ID[FILL_PARTIAL];
+			}
+			else if (avFill < 24 && avFill >= 17) {
+				updateMsg[FILL] = ID[FILL_NEAR_EMPTY];
+			}
+			else {
+				updateMsg[FILL] = ID[FILL_EMPTY];
+			}//if ed_filllevel
 
              //Write to BinCompanion every time period status of relevent variables 
             int bytes_wrote = write(client, updateMsg, UPDATE_SIZE);
@@ -1136,10 +1143,8 @@ void *readFromApp(void *ptr){
             //TODO:Compare buf to strings to perfrom actions 
             if (strcmp(buf, "call") == 0) {ei_userCommand = MOVE_TO_DISPOSAL;}
             if (strcmp(buf, "return") == 0) { ei_userCommand = MOVE_TO_COLLECTIONS;}
-            if (strcmp(buf, "resume") == 0) {ei_userCommand = STOP;}
-            if (strcmp(buf, "stop") == 0) { ei_userCommand = STOP;}
+            if (strcmp(buf, "resume") == 0 || strcmp(buf, "stop") == 0) {ei_userCommand = STOP;}
             if (strcmp(buf, "shutdown") == 0) { ei_userCommand = SHUT_DOWN;}
-
             if(strcmp(buf, "disconnect") == 0){
                 connectionStatus = STATE_NOCONNECTION;
             }
