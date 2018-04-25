@@ -1055,8 +1055,8 @@ void *writeToApp(void *ptr){
     //CONSTANTS DECLARATION 
     #define MODE 0 
     #define FILL 1
-    #define ERRORCODE 2 
-    #define DESTINATION  3
+    #define ERRORCODE 3
+    #define DESTINATION  2
 
     #define UPDATE_SIZE 4
 
