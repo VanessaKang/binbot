@@ -149,9 +149,10 @@ void spawn() {
 void *writeToApp(void *ptr){
 	//CONSTANTS DECLARATION 
 	#define STATE 0 
-    #define DESTINATION 1
-	#define ERRORCODE 2
-	#define FILL 3
+	#define FILL 1
+    #define DESTINATION 2
+	#define ERRORCODE 3
+
 
 	#define UPDATE_SIZE 4
 
@@ -238,8 +239,7 @@ void *readFromApp(void *ptr){
 			//       Compare buf to strings to perfrom actions 
 			if (strcmp(buf, "call") == 0) { ei_userCommand = MOVE_TO_DISPOSAL; }
 			if (strcmp(buf, "return") == 0) { ei_userCommand = MOVE_TO_COLLECTIONS; }
-			if (strcmp(buf, "resume") == 0) { ei_userCommand = STOP; }
-			if (strcmp(buf, "stop") == 0) { ei_userCommand = STOP; }
+			if (strcmp(buf, "resume") == 0 || strcmp(buf, "stop") == 0) { ei_userCommand = STOP; }
 			if (strcmp(buf, "shutdown") == 0) { ei_userCommand = SHUT_DOWN; }
 
 			if(strcmp(buf, "disconnect") == 0){

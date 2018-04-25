@@ -1,6 +1,41 @@
 <resources>
     <string name="app_name">BinCompanion_v4</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <!--These are strings for managing connection-->
+    <string name="connected_Label">Connection Status: </string>
+    <string name="connected">CONNECTED</string>
+    <string name="connecting">CONNECTING</string>
+    <string name="failed">FAILED</string>
+    <string name="disconnected">DISCONNECTED</string>
+    <string name="not_connected">NOT CONNECTED</string>
+
+    <!--Strings for managing Mode -->
+    <string name="collection">IN COLLECTION</string>
+    <string name="disposal">IN DISPOSAL</string>
+    <string name="travelCollect">TRAVELLING TO COLLECTION</string>
+    <string name="travelDispose">TRAVELLING TO DISPOSAL</string>
+    <string name="stopped">STOPPED</string>
+    <string name="error">ERROR</string>
+
+    <!--Strings for managing Fill -->
+    <string name="full">FULL</string>
+    <string name="partial_full">PARTIAL</string>
+    <string name="near_empty">SOME</string>
+    <string name="empty">EMPTY</string>
+
+    <!--These are status screen strings-->
+    <string name="mode_Label">Mode:</string>
+    <string name="fill_Label">Fill Level:</string>
+
+    <!-- Menu Labels -->
+    <string name="connectToPaired">Connect</string>
+    <string name="connectToNew">Pair</string>
+    <string name="disconnect">Disconnect</string>
+
+    <!--Button Labels -->
+    <string name="callButton_Label">Go To Disposal</string>
+    <string name="returnButton_Label">Go To Collection</string>
+    <string name="resumeButton_Label">Resume</string>
+    <string name="stopButton_Label">Stop</string>
+    <string name="shutdownButton_Label">Shutdown</string>
 </resources>

@@ -1,5 +1,5 @@
 //Created by nchum on 2018-04-02.
-package b.y10k.bincompanion_v4;
+package y10k.bincompanion_v4;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -280,3 +280,4 @@ public class BluetoothService extends Service {
         }//cancel
     }//ConnectedThread
 }//BluetoothService
+
