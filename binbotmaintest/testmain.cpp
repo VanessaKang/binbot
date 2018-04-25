@@ -167,6 +167,7 @@ int ci_sensorFront;
 int ci_sensorRight;
 int ci_sensorFill = 15;
 int ci_sensorVertical;
+int avFill;
 
 // New proposed variables from Component document
 int ei_userCommand = NO_COMMAND;
@@ -216,14 +217,14 @@ int iret1FSM, iret2bluetoothServer, iret3errorDiag, iret4Data;
 //create independent threads to run each function
 iret1FSM = pthread_create( &thread1, NULL, FSM, NULL);
 iret2bluetoothServer = pthread_create( &thread2, NULL, bluetoothServer, NULL);
-iret3errorDiag = pthread_create( &thread3, NULL, errorDiag, NULL);
+//iret3errorDiag = pthread_create( &thread3, NULL, errorDiag, NULL);
 iret4Data = pthread_create( &thread4, NULL, Data, NULL);
 
 
 //wait for each thread to finish before completing program
 pthread_join( thread1, NULL);
 pthread_join( thread2, NULL);
-pthread_join( thread3, NULL);
+//pthread_join( thread3, NULL);
 pthread_join( thread4, NULL);
 
 //print to console to confirm program has finished
@@ -432,12 +433,11 @@ void writeData(int val){
 
 
 void errorState(){
-    printf("Error State\n");s
+    printf("Error State\n");
     if(ei_error != 0){
         printf("do the stuff\n");
         eb_lineFollow = 0;
         usleep(1000000);
-
     }
     else{
         ei_state=ei_prevState;
@@ -594,7 +594,6 @@ void travel(){
 void collection(){
     printf("Collection state reached \n");
     int fillLevel[3] = {25,25,25};
-    int avFill;
     int sum;
     int fillCheckStart;
     while ((eb_binFilled == FALSE) && (ei_userCommand == NO_COMMAND)){
@@ -687,7 +686,6 @@ void collection(){
 void disposal(){
     printf("Collection state reached \n");
     int fillLevel[3] = {3,3,3};
-    int avFill;
     int sum;
     int fillCheckStart;
     while( (eb_binEmptied == FALSE) && (ei_userCommand == NO_COMMAND) ){
@@ -865,7 +863,7 @@ void noBinDiag(){
         ei_error = TRUE;
     }
     if(ci_sensorFill < 31 && ei_error==TRUE){
-        ei_error ==FALSE;
+        ei_error = FALSE;
     }
 }
 void ultraSensDiag(){
@@ -1095,10 +1093,10 @@ void *writeToApp(void *ptr){
                 break;
             }//switch(ei_state) 
 
-			if (eb_nextDest = COLLECTION) {
+			if (eb_nextDest == COLLECTION) {
 				updateMsg[DESTINATION] = ID[COLLECTION];
 			} 
-			else if (eb_nextDest = DISPOSAL) {
+			else if (eb_nextDest == DISPOSAL) {
 				updateMsg[DESTINATION] = ID[DISPOSAL];
 			}//if eb_extDest
 
