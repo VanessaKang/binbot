@@ -141,7 +141,7 @@ unsigned char ultraVal;
 
 
 //declare global variables--------
-int ei_state= COLLECTIONSTATE;
+int ei_state= DISPOSALSTATE;
 double ed_fillLevel;
 double vd_battVoltage;
 int ei_error=0;
@@ -167,7 +167,6 @@ int ci_sensorFront;
 int ci_sensorRight;
 int ci_sensorFill = 15;
 int ci_sensorVertical;
-int avFill;
 
 // New proposed variables from Component document
 int ei_userCommand = NO_COMMAND;
@@ -257,7 +256,7 @@ void *FSM(void *ptr){
                 //thread so we just need to check the global variable indicating errors (ei_error?)
                 }
                 errorState();
-                //ei_prevState = 0;
+                ei_prevState = 0;
             break;
             case 1: //Travel State
                 if(ei_prevState != 1){
@@ -362,7 +361,7 @@ void *Data(void *ptr){
             //printf("stopping \n");
             writeData(20);
         }
-        if(ei_state == COLLECTIONSTATE || ei_state == DISPOSALSTATE || ei_state == ERRORSTATE){
+        if(ei_state == COLLECTIONSTATE || ei_state == DISPOSALSTATE){
             printf("reading sensor values \n");
             writeData(4);
             delay(I2CDELAY);
@@ -370,7 +369,7 @@ void *Data(void *ptr){
             if(ci_sensorFill==0 or ci_sensorFill>255){
                 ci_sensorFill = 255;
             }
-            printf("SensorFill: %i \n",ci_sensorFill);
+            //printf("SensorFill: %i \n",ci_sensorFill);
         }
         
     }
@@ -435,9 +434,8 @@ void writeData(int val){
 void errorState(){
     printf("Error State\n");
     if(ei_error != 0){
-        printf("do the stuff\n");
-        eb_lineFollow = 0;
-        usleep(1000000);
+        printf("do the stuff");
+
     }
     else{
         ei_state=ei_prevState;
@@ -557,7 +555,7 @@ void travel(){
             case SHUT_DOWN:
                 //do shutdown stuff
                 logFunc();
-                //system("sudo shutdown -h now");
+                system("sudo shutdown -h now");
                 break;
             case STOP:
                 //do stop stuff
@@ -594,6 +592,7 @@ void travel(){
 void collection(){
     printf("Collection state reached \n");
     int fillLevel[3] = {25,25,25};
+    int avFill;
     int sum;
     int fillCheckStart;
     while ((eb_binFilled == FALSE) && (ei_userCommand == NO_COMMAND)){
@@ -645,7 +644,7 @@ void collection(){
             case SHUT_DOWN:
                 //do shutdown stuff
                 logFunc();
-                //system("sudo shutdown -h now");
+                system("sudo shutdown -h now");
                 break;
             case STOP:
                 //do stop stuff
@@ -684,45 +683,58 @@ void collection(){
 }
 
 void disposal(){
-    printf("Collection state reached \n");
+    printf("Disposal state reached \n");
     int fillLevel[3] = {3,3,3};
+    int avFill;
     int sum;
     int fillCheckStart;
-    while( (eb_binEmptied == FALSE) && (ei_userCommand == NO_COMMAND) ){
-        //Stay still, wait for garbage to be disposed
-        //send message to app, error state will bring back to disposal state
-        for(int i =2; i>=1;i--){
-          fillLevel[i] = fillLevel[i-1];
-        }
-        fillLevel[0] = ci_sensorFill;
-        sum = 0;
-        for (int i = 0; i<3 ; i++){
-          sum = sum+fillLevel[i];
-        }
-        avFill = sum/3;
-        
-        if(avFill >= BINEMPTYDIST){
-            if (eb_binEmptyCheck == FALSE){
-              fillCheckStart = timeFromStart(start);
-              eb_binEmptyCheck = TRUE;
+    if (connectionStatus == STATE_CONNECTED) {
+        while (ei_userCommand == NO_COMMAND) {
+            if(ei_error != 0){
+                ei_prevState = ei_state;
+                ei_state = ERRORSTATE; //set state to 0 for error state due to error
+                eb_binEmptied = FALSE; //reset flag after exiting loop
+                break;
             }
-            //printf("timeFromStart(start): %i ", timeFromStart(start));
-            //printf("fillCheckStart: %i \n", fillCheckStart);
-            if((timeFromStart(start) - fillCheckStart) >= 2000 && (avFill >= BINFULLDIST) && (eb_binEmptyCheck = TRUE)){
-              printf("Bin full and successfully waited 2sec ");
-              eb_binEmptyCheck = FALSE;
-              eb_binEmptied = TRUE;
-            }else if ((timeFromStart(start) - fillCheckStart) >= 2000 && (avFill <= BINFULLDIST) && (eb_binEmptyCheck = TRUE)){
-              printf("Bin not full and successfully waited 2sec, reset collection");
-              eb_binEmptyCheck = FALSE;
-              eb_binEmptied = FALSE;
-            } 
+
         }
-        if(ei_error != 0){
-            ei_prevState = ei_state;
-            ei_state = ERRORSTATE; //set state to 0 for error state due to error
-            eb_binEmptied = FALSE; //reset flag after exiting loop
-            break;
+    } else {
+        while( (eb_binEmptied == FALSE)&&(ei_userCommand == NO_COMMAND) ){
+            //Stay still, wait for garbage to be disposed
+            //send message to app, error state will bring back to disposal state
+            for(int i =2; i>=1;i--){
+              fillLevel[i] = fillLevel[i-1];
+            }
+            fillLevel[0] = ci_sensorFill;
+            sum = 0;
+            for (int i = 0; i<3 ; i++){
+              sum = sum+fillLevel[i];
+            }
+            avFill = sum/3;
+            
+            if(avFill >= BINEMPTYDIST){
+                if (eb_binEmptyCheck == FALSE){
+                  fillCheckStart = timeFromStart(start);
+                  eb_binEmptyCheck = TRUE;
+                }
+                //printf("timeFromStart(start): %i ", timeFromStart(start));
+                //printf("fillCheckStart: %i \n", fillCheckStart);
+                if((timeFromStart(start) - fillCheckStart) >= 2000 && (avFill >= BINFULLDIST) && (eb_binEmptyCheck = TRUE)){
+                  printf("Bin full and successfully waited 2sec ");
+                  eb_binEmptyCheck = FALSE;
+                  eb_binEmptied = TRUE;
+                }else if ((timeFromStart(start) - fillCheckStart) >= 2000 && (avFill <= BINFULLDIST) && (eb_binEmptyCheck = TRUE)){
+                  printf("Bin not full and successfully waited 2sec, reset collection");
+                  eb_binEmptyCheck = FALSE;
+                  eb_binEmptied = FALSE;
+                } 
+            }
+            if(ei_error != 0){
+                ei_prevState = ei_state;
+                ei_state = ERRORSTATE; //set state to 0 for error state due to error
+                eb_binEmptied = FALSE; //reset flag after exiting loop
+                break;
+            }
         }
     }
     eb_binEmptied = FALSE; //reset flag after exiting loop
@@ -733,7 +745,7 @@ void disposal(){
             case SHUT_DOWN:
                 //do shutdown stuff
                 logFunc();
-               // system("sudo shutdown -h now");
+                system("sudo shutdown -h now");
                 break;
             case STOP:
                 //do stop stuff
@@ -863,7 +875,7 @@ void noBinDiag(){
         ei_error = TRUE;
     }
     if(ci_sensorFill < 31 && ei_error==TRUE){
-        ei_error = FALSE;
+        ei_error ==FALSE;
     }
 }
 void ultraSensDiag(){
@@ -997,9 +1009,6 @@ double timeFromStart(auto y){
 
 //Setup the socket on start 
 void setupSocket() {
-    // Setup Raspberry Pi to  build sockets 
-    system("sudo sdptool add SP"); 
-
     //allocate socket
     sock = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
 
@@ -1053,8 +1062,8 @@ void *writeToApp(void *ptr){
     //CONSTANTS DECLARATION 
     #define MODE 0 
     #define FILL 1
-    #define ERRORCODE 3
-    #define DESTINATION  2
+    #define BATT 2 
+    #define SIG  3
 
     #define UPDATE_SIZE 4
 
@@ -1076,7 +1085,7 @@ void *writeToApp(void *ptr){
         if (new_t - t > 5) {
 
             //Create update code to pass to the App 
-            char updateMsg[UPDATE_SIZE] = { 0 };
+            char updateMsg[UPDATE_SIZE] = { '0','0','0','0' };
 
             switch (ei_state) {
             case ERRORSTATE:
@@ -1093,25 +1102,18 @@ void *writeToApp(void *ptr){
                 break;
             }//switch(ei_state) 
 
-			if (eb_nextDest == COLLECTION) {
-				updateMsg[DESTINATION] = ID[COLLECTION];
-			} 
-			else if (eb_nextDest == DISPOSAL) {
-				updateMsg[DESTINATION] = ID[DISPOSAL];
-			}//if eb_extDest
-
-			if (avFill < 10) {
-				updateMsg[FILL] = ID[FILL_FULL];
-			}
-			else if (avFill < 17 && avFill >= 10) {
-				updateMsg[FILL] = ID[FILL_PARTIAL];
-			}
-			else if (avFill < 24 && avFill >= 17) {
-				updateMsg[FILL] = ID[FILL_NEAR_EMPTY];
-			}
-			else {
-				updateMsg[FILL] = ID[FILL_EMPTY];
-			}//if ed_filllevel
+            if (ed_fillLevel < 10) {
+                updateMsg[FILL] = ID[FILL_FULL];
+            }
+            else if (ed_fillLevel < 17 && ed_fillLevel >= 10) {
+                updateMsg[FILL] = ID[FILL_PARTIAL];
+            }
+            else if (ed_fillLevel < 24 && ed_fillLevel >= 17) {
+                updateMsg[FILL] = ID[FILL_NEAR_EMPTY];
+            }
+            else {
+                updateMsg[FILL] = ID[FILL_EMPTY];
+            }//if ed_filllevel
 
              //Write to BinCompanion every time period status of relevent variables 
             int bytes_wrote = write(client, updateMsg, UPDATE_SIZE);
@@ -1141,8 +1143,10 @@ void *readFromApp(void *ptr){
             //TODO:Compare buf to strings to perfrom actions 
             if (strcmp(buf, "call") == 0) {ei_userCommand = MOVE_TO_DISPOSAL;}
             if (strcmp(buf, "return") == 0) { ei_userCommand = MOVE_TO_COLLECTIONS;}
-            if (strcmp(buf, "resume") == 0 || strcmp(buf, "stop") == 0) {ei_userCommand = STOP;}
+            if (strcmp(buf, "resume") == 0) {ei_userCommand = STOP;}
+            if (strcmp(buf, "stop") == 0) { ei_userCommand = STOP;}
             if (strcmp(buf, "shutdown") == 0) { ei_userCommand = SHUT_DOWN;}
+
             if(strcmp(buf, "disconnect") == 0){
                 connectionStatus = STATE_NOCONNECTION;
             }
