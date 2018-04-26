@@ -1031,7 +1031,7 @@ void setupSocket() {
     //bind socket to port of BluetoothAdapter 
     loc_addr.rc_family = AF_BLUETOOTH;
     str2ba(address, &loc_addr.rc_bdaddr);
-    loc_addr.rc_channel = (uint8_t);
+    loc_addr.rc_channel = (uint8_t) channel;
 
     bind(sock, (struct sockaddr *) &loc_addr, sizeof(loc_addr));
 }//setup
