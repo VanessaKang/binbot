@@ -307,7 +307,7 @@ void *bluetoothServer(void *ptr){
             end = clock()/CLOCKS_PER_SEC; 
             if(end - begin > 5){
                 printf("MAIN: Looping\n"); 
-                printf("%i \n", ei_userCommand);
+                //printf("%i \n", ei_userCommand);
                 begin = clock()/CLOCKS_PER_SEC; 
             } 
             /////////////////////////////////////////////////////////////////////
@@ -1011,6 +1011,9 @@ double timeFromStart(auto y){
 void setupSocket() {
     //allocate socket
     sock = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+	if (sock < 0) {
+		perror("MAIN: Socket Error");
+	}
 
     //bind socket to port of BluetoothAdapter 
     loc_addr.rc_family = AF_BLUETOOTH;
@@ -1021,13 +1024,16 @@ void setupSocket() {
 }
 
 //set socket to listen for connection requests 
-void listen() {
+int listen() {
     //put socket into listening mode (blocking call) 
     printf("MAIN: Listening...\n");
     listen(sock, 1);
 
     //Accept a connection 
     client = accept(sock, (struct sockaddr *) &rem_addr, &opt);
+	if (client < 0) {
+		perror("MAIN: failed to accept connection");
+	}
 
     //Print connection success 
     ba2str(&rem_addr.rc_bdaddr, buf); 
