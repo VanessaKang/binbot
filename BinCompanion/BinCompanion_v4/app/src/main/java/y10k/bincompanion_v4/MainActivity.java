@@ -239,11 +239,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        if(mConnectionStatus == STATE_CONNECTED) {
+            mService.disconnect();
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        updateUI();
     }
 
     @Override
