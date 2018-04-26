@@ -11,8 +11,8 @@
     <!--Strings for managing Mode -->
     <string name="collection">IN COLLECTION</string>
     <string name="disposal">IN DISPOSAL</string>
-    <string name="travelCollect">TRAVELLING TO COLLECTION</string>
-    <string name="travelDispose">TRAVELLING TO DISPOSAL</string>
+    <string name="travelCollect">TRAVEL TO COLLECTION</string>
+    <string name="travelDispose">TRAVEL TO DISPOSAL</string>
     <string name="stopped">STOPPED</string>
     <string name="error">ERROR</string>
 

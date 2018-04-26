@@ -270,7 +270,11 @@ public class MainActivity extends AppCompatActivity {
                 createDialog(CONNECT_DIALOG);
                 break;
             case R.id.action_disconnect:
-                sendCommand(DISCONNECT);
+                if(mConnectionStatus == STATE_CONNECTED) {
+                    sendCommand(DISCONNECT);
+                } else {
+                    mService.disconnect();
+                }
                 break;
         }//switch
         return super.onOptionsItemSelected(item);
@@ -289,7 +293,20 @@ public class MainActivity extends AppCompatActivity {
                 mConnect.setText(R.string.failed);
                 break;
             case STATE_DISCONNECTED:
-                resetUi();
+                Button resume = findViewById(R.id.resume_button);
+                Button stop = findViewById(R.id.stop_button);
+                TextView stopped = findViewById(R.id.stopped_status);
+
+                mModeStatus = STATE_NOT_CONNECTED;
+                mFillStatus = STATE_NOT_CONNECTED;
+                isStopped = false;
+
+                resume.setVisibility(View.INVISIBLE);
+                resume.setEnabled(false);
+                stop.setVisibility(View.VISIBLE);
+                stop.setEnabled(true);
+                stopped.setVisibility(View.INVISIBLE);
+
                 mConnect.setText(R.string.disconnected);
                 break;
             default:
@@ -343,24 +360,6 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }//mFillStatus switch
     }//updateUI
-
-    private void resetUi(){
-        Button resume = findViewById(R.id.resume_button);
-        Button stop = findViewById(R.id.stop_button);
-        TextView stopped = findViewById(R.id.stopped_status);
-
-        mModeStatus = STATE_NOT_CONNECTED;
-        mFillStatus = STATE_NOT_CONNECTED;
-        isStopped = false;
-
-        resume.setVisibility(View.INVISIBLE);
-        resume.setEnabled(false);
-        stop.setVisibility(View.VISIBLE);
-        stop.setEnabled(true);
-        stopped.setVisibility(View.INVISIBLE);
-
-        updateUI();
-    }
 
     private void createDialog(int dialogType){
         //Store information required for dialog in Bundle
