@@ -19,8 +19,8 @@
 #include <iomanip>
 #include <fstream>
 #include <vector>
-#include <bluetooth/bluetooth.h> 
-#include <bluetooth/rfcomm.h> 
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/rfcomm.h>
 
 // BINBOT SERVER
 //CONSTANT DECLARTION 
@@ -684,45 +684,58 @@ void collection(){
 }
 
 void disposal(){
-    printf("Collection state reached \n");
+    printf("Disposal state reached \n");
     int fillLevel[3] = {3,3,3};
     int sum;
     int fillCheckStart;
-    while( (eb_binEmptied == FALSE) && (ei_userCommand == NO_COMMAND) ){
-        //Stay still, wait for garbage to be disposed
-        //send message to app, error state will bring back to disposal state
-        for(int i =2; i>=1;i--){
-          fillLevel[i] = fillLevel[i-1];
-        }
-        fillLevel[0] = ci_sensorFill;
-        sum = 0;
-        for (int i = 0; i<3 ; i++){
-          sum = sum+fillLevel[i];
-        }
-        avFill = sum/3;
-        
-        if(avFill >= BINEMPTYDIST){
-            if (eb_binEmptyCheck == FALSE){
-              fillCheckStart = timeFromStart(start);
-              eb_binEmptyCheck = TRUE;
+
+    if (connectionStatus == STATE_CONNECTED) {
+        while (ei_userCommand == NO_COMMAND) {
+            if(ei_error != 0){
+                ei_prevState = ei_state;
+                ei_state = ERRORSTATE; //set state to 0 for error state due to error
+                eb_binEmptied = FALSE; //reset flag after exiting loop
+                break;
             }
-            //printf("timeFromStart(start): %i ", timeFromStart(start));
-            //printf("fillCheckStart: %i \n", fillCheckStart);
-            if((timeFromStart(start) - fillCheckStart) >= 2000 && (avFill >= BINFULLDIST) && (eb_binEmptyCheck = TRUE)){
-              printf("Bin full and successfully waited 2sec ");
-              eb_binEmptyCheck = FALSE;
-              eb_binEmptied = TRUE;
-            }else if ((timeFromStart(start) - fillCheckStart) >= 2000 && (avFill <= BINFULLDIST) && (eb_binEmptyCheck = TRUE)){
-              printf("Bin not full and successfully waited 2sec, reset collection");
-              eb_binEmptyCheck = FALSE;
-              eb_binEmptied = FALSE;
-            } 
         }
-        if(ei_error != 0){
-            ei_prevState = ei_state;
-            ei_state = ERRORSTATE; //set state to 0 for error state due to error
-            eb_binEmptied = FALSE; //reset flag after exiting loop
-            break;
+    }
+    else {
+        while( (eb_binEmptied == FALSE) && (ei_userCommand == NO_COMMAND) ){
+            //Stay still, wait for garbage to be disposed
+            //send message to app, error state will bring back to disposal state
+            for(int i =2; i>=1;i--){
+              fillLevel[i] = fillLevel[i-1];
+            }
+            fillLevel[0] = ci_sensorFill;
+            sum = 0;
+            for (int i = 0; i<3 ; i++){
+              sum = sum+fillLevel[i];
+            }
+            avFill = sum/3;
+            
+            if(avFill >= BINEMPTYDIST){
+                if (eb_binEmptyCheck == FALSE){
+                  fillCheckStart = timeFromStart(start);
+                  eb_binEmptyCheck = TRUE;
+                }
+                //printf("timeFromStart(start): %i ", timeFromStart(start));
+                //printf("fillCheckStart: %i \n", fillCheckStart);
+                if((timeFromStart(start) - fillCheckStart) >= 2000 && (avFill >= BINFULLDIST) && (eb_binEmptyCheck = TRUE)){
+                  printf("Bin full and successfully waited 2sec ");
+                  eb_binEmptyCheck = FALSE;
+                  eb_binEmptied = TRUE;
+                }else if ((timeFromStart(start) - fillCheckStart) >= 2000 && (avFill <= BINFULLDIST) && (eb_binEmptyCheck = TRUE)){
+                  printf("Bin not full and successfully waited 2sec, reset collection");
+                  eb_binEmptyCheck = FALSE;
+                  eb_binEmptied = FALSE;
+                } 
+            }
+            if(ei_error != 0){
+                ei_prevState = ei_state;
+                ei_state = ERRORSTATE; //set state to 0 for error state due to error
+                eb_binEmptied = FALSE; //reset flag after exiting loop
+                break;
+            }
         }
     }
     eb_binEmptied = FALSE; //reset flag after exiting loop
@@ -1093,25 +1106,25 @@ void *writeToApp(void *ptr){
                 break;
             }//switch(ei_state) 
 
-			if (eb_nextDest == COLLECTION) {
-				updateMsg[DESTINATION] = ID[COLLECTION];
-			} 
-			else if (eb_nextDest == DISPOSAL) {
-				updateMsg[DESTINATION] = ID[DISPOSAL];
-			}//if eb_extDest
+            if (eb_nextDest == COLLECTION) {
+                updateMsg[DESTINATION] = ID[COLLECTION];
+            } 
+            else if (eb_nextDest == DISPOSAL) {
+                updateMsg[DESTINATION] = ID[DISPOSAL];
+            }//if eb_extDest
 
-			if (avFill < 10) {
-				updateMsg[FILL] = ID[FILL_FULL];
-			}
-			else if (avFill < 17 && avFill >= 10) {
-				updateMsg[FILL] = ID[FILL_PARTIAL];
-			}
-			else if (avFill < 24 && avFill >= 17) {
-				updateMsg[FILL] = ID[FILL_NEAR_EMPTY];
-			}
-			else {
-				updateMsg[FILL] = ID[FILL_EMPTY];
-			}//if ed_filllevel
+            if (avFill < 10) {
+                updateMsg[FILL] = ID[FILL_FULL];
+            }
+            else if (avFill < 17 && avFill >= 10) {
+                updateMsg[FILL] = ID[FILL_PARTIAL];
+            }
+            else if (avFill < 24 && avFill >= 17) {
+                updateMsg[FILL] = ID[FILL_NEAR_EMPTY];
+            }
+            else {
+                updateMsg[FILL] = ID[FILL_EMPTY];
+            }//if ed_filllevel
 
              //Write to BinCompanion every time period status of relevent variables 
             int bytes_wrote = write(client, updateMsg, UPDATE_SIZE);
