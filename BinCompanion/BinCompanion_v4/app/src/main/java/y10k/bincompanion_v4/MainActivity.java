@@ -19,9 +19,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import java.io.UnsupportedEncodingException;
 
 public class MainActivity extends AppCompatActivity {
     //CONSTANTS DECLARATION
@@ -29,6 +26,7 @@ public class MainActivity extends AppCompatActivity {
     static final int STATE_CHANGE = 6;
     static final int OBTAINED_ADDRESS = 7;
     static final int UPDATE = 9;
+
     // Command Strings
     static final String CALL = "call";
     static final String RETURN = "return";
@@ -65,6 +63,11 @@ public class MainActivity extends AppCompatActivity {
     static final int TO_COLLECT = 0;
     static final int TO_DISPOSE = 1;
 
+    //Dialog Types
+    static final int CONNECT_DIALOG = 40;
+    static final int ERROR_DIALOG = 41;
+    static final int NO_BT_DIALOG = 42;
+
     //VARIABLE DECLARATION
     private int mConnectionStatus = STATE_NOT_CONNECTED;
     private int mModeStatus = STATE_NOT_CONNECTED;
@@ -77,11 +80,6 @@ public class MainActivity extends AppCompatActivity {
     private TextView mConnect;
     private TextView mMode;
     private TextView mFill;
-
-    private Button mCallButton;
-    private Button mReturnButton;
-    private Button mResumeButton;
-    private Button mStopButton;
 
     private BluetoothAdapter mBluetoothAdapter;
 
@@ -106,13 +104,11 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
                     break;
-
                 case OBTAINED_ADDRESS:
                     String deviceAddress = resultData.getString("address");
                     BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(deviceAddress);
                     mService.connect(device);
                     break;
-
                 case UPDATE:
                     //Store int to appropriate variables and update UI
                     byte[] status = resultData.getByteArray("status");
@@ -122,8 +118,8 @@ public class MainActivity extends AppCompatActivity {
                     mNextDestinationStatus = Character.getNumericValue(status[DESTINATION]);
 
                     updateUI();
-
                     //TESTING /////////////////////////
+                    /*
                     String test = null;
                     try {
                         test = new String(status, "UTF-8");
@@ -131,6 +127,7 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                     Toast.makeText(getApplicationContext(), test, Toast.LENGTH_SHORT).show();
+                    */
                     ///////////////////////////////////
                     break;
                 default:
@@ -169,8 +166,9 @@ public class MainActivity extends AppCompatActivity {
         mConnect = findViewById(R.id.connectStatus);
         mMode = findViewById(R.id.modeStatus);
         mFill = findViewById(R.id.fillStatus);
+        updateUI();
 
-        mCallButton = findViewById(R.id.call_button);
+        Button mCallButton = findViewById(R.id.call_button);
         mCallButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -180,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
             }//onClick
         });//onClickListener
 
-        mReturnButton = findViewById(R.id.return_button);
+        Button mReturnButton = findViewById(R.id.return_button);
         mReturnButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -190,42 +188,26 @@ public class MainActivity extends AppCompatActivity {
             }//onClick
         });//onClickListener
 
-        mStopButton = findViewById(R.id.stop_button);
+        Button mStopButton = findViewById(R.id.stop_button);
         mStopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (mConnectionStatus == STATE_CONNECTED) {
                     sendCommand(STOP);
                     isStopped = true;
-
-                    Button stop = (Button) view;
-                    Button resume = findViewById(R.id.resume_button);
-
-                    stop.setVisibility(View.INVISIBLE);
-                    stop.setEnabled(false);
-
-                    resume.setVisibility(View.VISIBLE);
-                    resume.setEnabled(true);
+                    toggleCommandButton();
                 }//if
             }//onClick
         });//onClickListener
 
-        mResumeButton = findViewById(R.id.resume_button);
+        Button mResumeButton = findViewById(R.id.resume_button);
         mResumeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if(mConnectionStatus == STATE_CONNECTED) {
                     sendCommand(RESUME);
                     isStopped = false;
-
-                    Button resume = (Button) view;
-                    Button stop = findViewById(R.id.stop_button);
-
-                    resume.setVisibility(View.INVISIBLE);
-                    resume.setEnabled(false);
-
-                    stop.setVisibility(View.VISIBLE);
-                    stop.setEnabled(true);
+                    toggleCommandButton();
                 }//If
             }//onClick
         });//onClickListener
@@ -233,7 +215,7 @@ public class MainActivity extends AppCompatActivity {
         //Check if device supports bluetooth
         if(mBluetoothAdapter == null){
             //Does not support bluetooth
-            //TODO: Deal with no support
+            createDialog(NO_BT_DIALOG);
         } else {
             //Check if on
             if (!mBluetoothAdapter.isEnabled()){
@@ -285,11 +267,8 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         switch (id){
-            case R.id.action_ConnectOld:
-                //TODO
-                break;
-            case R.id.action_ConnectNew:
-                //TODO
+            case R.id.action_connect:
+                createDialog(CONNECT_DIALOG);
                 break;
             case R.id.action_disconnect:
                 sendCommand(DISCONNECT);
@@ -342,6 +321,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case ERROR:
                 mMode.setText(R.string.error);
+                createDialog(ERROR_DIALOG);
                 break;
             default:
                 mMode.setText(R.string.not_connected);
@@ -368,11 +348,43 @@ public class MainActivity extends AppCompatActivity {
         }//mFillStatus switch
     }//updateUI
 
-    private void createDialog(){
-        //TODO
+    private void createDialog(int dialogType){
+        //Store information required for dialog in Bundle
+        Bundle bundle = new Bundle();
+        bundle.putParcelable("receiver", mReceiver);
+        bundle.putInt("dialogType", dialogType);
+
+        //Create Dialog Fragment
+        AlertFragment dialogFrag = new AlertFragment();
+        dialogFrag.setArguments(bundle);
+        dialogFrag.show(getSupportFragmentManager(), "dialog");
     }//createDialog
 
     private void sendCommand(String cmd){
         mService.write(cmd);
     }//sendCommand
+
+    private void toggleCommandButton (){
+        Button resume = findViewById(R.id.resume_button);
+        Button stop = findViewById(R.id.stop_button);
+        TextView stopped = findViewById(R.id.stopped_status);
+
+        if (stop.getVisibility() == View.VISIBLE) {
+            stop.setVisibility(View.INVISIBLE);
+            stop.setEnabled(false);
+
+            resume.setVisibility(View.VISIBLE);
+            resume.setEnabled(true);
+
+            stopped.setVisibility(View.VISIBLE);
+        } else {
+            resume.setVisibility(View.INVISIBLE);
+            resume.setEnabled(false);
+
+            stop.setVisibility(View.VISIBLE);
+            stop.setEnabled(true);
+
+            stopped.setVisibility(View.INVISIBLE);
+        }
+    }
 }

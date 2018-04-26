@@ -1,17 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:id="@+id/action_ConnectOld"
-        android:orderInCategory="1"
-        android:title="@string/connectToPaired" />
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/action_ConnectNew"
-        android:orderInCategory="2"
-        android:title="@string/connectToNew"/>
+        android:id="@+id/action_connect"
+        android:orderInCategory="1"
+        android:title="@string/connect" />
 
     <item
         android:id="@+id/action_disconnect"
-        android:orderInCategory="3"
+        android:orderInCategory="2"
         android:title="@string/disconnect"/>
 </menu>
