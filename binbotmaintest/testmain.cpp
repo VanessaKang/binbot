@@ -1031,10 +1031,10 @@ void setupSocket() {
     //bind socket to port of BluetoothAdapter 
     loc_addr.rc_family = AF_BLUETOOTH;
     str2ba(address, &loc_addr.rc_bdaddr);
-    loc_addr.rc_channel = (uint8_t)1;
+    loc_addr.rc_channel = (uint8_t);
 
     bind(sock, (struct sockaddr *) &loc_addr, sizeof(loc_addr));
-}
+}//setup
 
  
 
@@ -1057,7 +1057,7 @@ void spawn() {
 
  //set socket to listen for connection requests 
 void listen() {
-	bool hasAccepted = false;
+	bool hasAccepted = false; 
 
 	//put socket into listening mode (blocking call) 
 	printf("MAIN: Listening...\n");
@@ -1070,12 +1070,11 @@ void listen() {
 			perror("MAIN: failed to accept connection");
 			channel++; 
 
-			setupSocket(); 
+			setupSocket();
+		} else {
+			hasAccepted = true; 
 		}
-		else {
-			hasAccepted = true;
-		}
-	}
+	} 
 
 	//Print connection success 
 	ba2str(&rem_addr.rc_bdaddr, buf);
