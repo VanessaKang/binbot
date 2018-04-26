@@ -141,7 +141,7 @@ unsigned char ultraVal;
 
 
 //declare global variables--------
-int ei_state= COLLECTIONSTATE;
+int ei_state= DISPOSALSTATE;
 double ed_fillLevel;
 double vd_battVoltage;
 int ei_error=0;
@@ -167,7 +167,6 @@ int ci_sensorFront;
 int ci_sensorRight;
 int ci_sensorFill = 15;
 int ci_sensorVertical;
-int avFill;
 
 // New proposed variables from Component document
 int ei_userCommand = NO_COMMAND;
@@ -257,7 +256,7 @@ void *FSM(void *ptr){
                 //thread so we just need to check the global variable indicating errors (ei_error?)
                 }
                 errorState();
-                //ei_prevState = 0;
+                ei_prevState = 0;
             break;
             case 1: //Travel State
                 if(ei_prevState != 1){
@@ -308,7 +307,7 @@ void *bluetoothServer(void *ptr){
             end = clock()/CLOCKS_PER_SEC; 
             if(end - begin > 5){
                 printf("MAIN: Looping\n"); 
-                printf("%i \n", ei_userCommand);
+                //printf("%i \n", ei_userCommand);
                 begin = clock()/CLOCKS_PER_SEC; 
             } 
             /////////////////////////////////////////////////////////////////////
@@ -362,7 +361,7 @@ void *Data(void *ptr){
             //printf("stopping \n");
             writeData(20);
         }
-        if(ei_state == COLLECTIONSTATE || ei_state == DISPOSALSTATE || ei_state == ERRORSTATE){
+        if(ei_state == COLLECTIONSTATE || ei_state == DISPOSALSTATE){
             printf("reading sensor values \n");
             writeData(4);
             delay(I2CDELAY);
@@ -370,7 +369,7 @@ void *Data(void *ptr){
             if(ci_sensorFill==0 or ci_sensorFill>255){
                 ci_sensorFill = 255;
             }
-            printf("SensorFill: %i \n",ci_sensorFill);
+            //printf("SensorFill: %i \n",ci_sensorFill);
         }
         
     }
@@ -435,9 +434,8 @@ void writeData(int val){
 void errorState(){
     printf("Error State\n");
     if(ei_error != 0){
-        printf("do the stuff\n");
-        eb_lineFollow = 0;
-        usleep(1000000);
+        printf("do the stuff");
+
     }
     else{
         ei_state=ei_prevState;
@@ -557,7 +555,7 @@ void travel(){
             case SHUT_DOWN:
                 //do shutdown stuff
                 logFunc();
-                //system("sudo shutdown -h now");
+                system("sudo shutdown -h now");
                 break;
             case STOP:
                 //do stop stuff
@@ -594,6 +592,7 @@ void travel(){
 void collection(){
     printf("Collection state reached \n");
     int fillLevel[3] = {25,25,25};
+    int avFill;
     int sum;
     int fillCheckStart;
     while ((eb_binFilled == FALSE) && (ei_userCommand == NO_COMMAND)){
@@ -645,7 +644,7 @@ void collection(){
             case SHUT_DOWN:
                 //do shutdown stuff
                 logFunc();
-                //system("sudo shutdown -h now");
+                system("sudo shutdown -h now");
                 break;
             case STOP:
                 //do stop stuff
@@ -686,6 +685,7 @@ void collection(){
 void disposal(){
     printf("Disposal state reached \n");
     int fillLevel[3] = {3,3,3};
+    int avFill;
     int sum;
     int fillCheckStart;
 
@@ -746,7 +746,7 @@ void disposal(){
             case SHUT_DOWN:
                 //do shutdown stuff
                 logFunc();
-               // system("sudo shutdown -h now");
+                system("sudo shutdown -h now");
                 break;
             case STOP:
                 //do stop stuff
@@ -876,7 +876,7 @@ void noBinDiag(){
         ei_error = TRUE;
     }
     if(ci_sensorFill < 31 && ei_error==TRUE){
-        ei_error = FALSE;
+        ei_error ==FALSE;
     }
 }
 void ultraSensDiag(){
@@ -1010,11 +1010,11 @@ double timeFromStart(auto y){
 
 //Setup the socket on start 
 void setupSocket() {
-    // Setup Raspberry Pi to  build sockets 
-    system("sudo sdptool add SP"); 
-
     //allocate socket
     sock = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+	if (sock < 0) {
+		perror("MAIN: Socket Error");
+	}
 
     //bind socket to port of BluetoothAdapter 
     loc_addr.rc_family = AF_BLUETOOTH;
@@ -1025,13 +1025,16 @@ void setupSocket() {
 }
 
 //set socket to listen for connection requests 
-void listen() {
+int listen() {
     //put socket into listening mode (blocking call) 
     printf("MAIN: Listening...\n");
     listen(sock, 1);
 
     //Accept a connection 
     client = accept(sock, (struct sockaddr *) &rem_addr, &opt);
+	if (client < 0) {
+		perror("MAIN: failed to accept connection");
+	}
 
     //Print connection success 
     ba2str(&rem_addr.rc_bdaddr, buf); 
@@ -1066,8 +1069,8 @@ void *writeToApp(void *ptr){
     //CONSTANTS DECLARATION 
     #define MODE 0 
     #define FILL 1
-    #define ERRORCODE 3
-    #define DESTINATION  2
+    #define BATT 2 
+    #define SIG  3
 
     #define UPDATE_SIZE 4
 
@@ -1089,7 +1092,7 @@ void *writeToApp(void *ptr){
         if (new_t - t > 5) {
 
             //Create update code to pass to the App 
-            char updateMsg[UPDATE_SIZE] = { 0 };
+            char updateMsg[UPDATE_SIZE] = { '0','0','0','0' };
 
             switch (ei_state) {
             case ERRORSTATE:
@@ -1154,8 +1157,10 @@ void *readFromApp(void *ptr){
             //TODO:Compare buf to strings to perfrom actions 
             if (strcmp(buf, "call") == 0) {ei_userCommand = MOVE_TO_DISPOSAL;}
             if (strcmp(buf, "return") == 0) { ei_userCommand = MOVE_TO_COLLECTIONS;}
-            if (strcmp(buf, "resume") == 0 || strcmp(buf, "stop") == 0) {ei_userCommand = STOP;}
+            if (strcmp(buf, "resume") == 0) {ei_userCommand = STOP;}
+            if (strcmp(buf, "stop") == 0) { ei_userCommand = STOP;}
             if (strcmp(buf, "shutdown") == 0) { ei_userCommand = SHUT_DOWN;}
+
             if(strcmp(buf, "disconnect") == 0){
                 connectionStatus = STATE_NOCONNECTION;
             }
