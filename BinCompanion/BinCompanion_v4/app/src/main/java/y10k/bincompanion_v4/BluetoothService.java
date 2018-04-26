@@ -37,6 +37,7 @@ public class BluetoothService extends Service {
     static final int STATE_CONNECTED = 13;
     static final int STATE_DISCONNECTED = 14;
     static final int STATE_FAILED = 15;
+    static final int STATE_LOST = 16;
 
     //Server Constants
     static final int UPDATE_SIZE = 4;
@@ -149,6 +150,12 @@ public class BluetoothService extends Service {
         }
     }//write
 
+    public void connection_lost(){
+        mConnectionStatus = STATE_LOST;
+        savedData.putInt("state", STATE_LOST);
+        mReceiver.send(STATE_CHANGE, savedData);
+    }
+
     public void connection_failed(){
         mConnectionStatus = STATE_FAILED;
         savedData.putInt("state", STATE_FAILED);
@@ -251,7 +258,7 @@ public class BluetoothService extends Service {
                             .sendToTarget();
                 }catch (IOException e){
                     Log.e(TAG, "Failed to Read",e);
-                    connection_failed(); //Signal Connection Disconnection
+                    connection_lost(); //Signal Connection Disconnection
                     break;
                 }//try/catch
             }//while
@@ -263,6 +270,7 @@ public class BluetoothService extends Service {
                 mmOutStream.write(bytes);
             } catch (IOException e) {
                 Log.e(TAG, "Failed to write", e);
+                connection_lost();
             }//try/catch
         }//write
 

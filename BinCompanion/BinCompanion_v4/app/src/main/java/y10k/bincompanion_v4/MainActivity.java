@@ -18,6 +18,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
@@ -46,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
     static final int STATE_CONNECTED = 13;
     static final int STATE_DISCONNECTED = 14;
     static final int STATE_FAILED = 15;
+    static final int STATE_LOST = 16;
 
     //Mode Identifiers
     static final int ERROR = 0;
@@ -81,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView mFill;
 
     private BluetoothAdapter mBluetoothAdapter;
+    private BluetoothDevice device;
 
     //Used to handle data sent throughout the application
     final ResultReceiver mReceiver = new BinCompanionReceiver(null);
@@ -105,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case OBTAINED_ADDRESS:
                     String deviceAddress = resultData.getString("address");
-                    BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(deviceAddress);
+                    device = mBluetoothAdapter.getRemoteDevice(deviceAddress);
                     mService.connect(device);
                     break;
                 case UPDATE:
@@ -211,6 +214,18 @@ public class MainActivity extends AppCompatActivity {
             }//onClick
         });//onClickListener
 
+        final Button mReconnectButton = findViewById(R.id.reconnectButton);
+        mReconnectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(mConnectionStatus == STATE_DISCONNECTED) {
+                    mService.connect(device);
+                    mReconnectButton.setVisibility(View.GONE);
+                    mReconnectButton.setEnabled(false);
+                }
+            }
+        });
+
         //Check if device supports bluetooth
         if(mBluetoothAdapter == null){
             //Does not support bluetooth
@@ -237,14 +252,6 @@ public class MainActivity extends AppCompatActivity {
     }//onCreate
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        if(mConnectionStatus == STATE_CONNECTED) {
-            mService.disconnect();
-        }
-    }
-
-    @Override
     protected void onResume() {
         super.onResume();
         updateUI();
@@ -253,6 +260,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if(mConnectionStatus == STATE_CONNECTED){
+            mService.disconnect();
+        }
+
         if(isBound){
             unbindService(mConnection);
             isBound = false;
@@ -296,6 +307,9 @@ public class MainActivity extends AppCompatActivity {
             case STATE_FAILED:
                 mConnect.setText(R.string.failed);
                 break;
+            case STATE_LOST:
+                mConnect.setText(R.string.lost);
+                break;
             case STATE_DISCONNECTED:
                 Button resume = findViewById(R.id.resume_button);
                 Button stop = findViewById(R.id.stop_button);
@@ -310,6 +324,12 @@ public class MainActivity extends AppCompatActivity {
                 stop.setVisibility(View.VISIBLE);
                 stop.setEnabled(true);
                 stopped.setVisibility(View.INVISIBLE);
+
+                if(device != null){
+                    Button mReconnectButton = findViewById(R.id.reconnectButton);
+                    mReconnectButton.setVisibility(View.VISIBLE);
+                    mReconnectButton.setEnabled(true);
+                }
 
                 mConnect.setText(R.string.disconnected);
                 break;

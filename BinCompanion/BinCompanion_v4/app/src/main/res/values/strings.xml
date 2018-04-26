@@ -7,6 +7,7 @@
     <string name="failed">FAILED</string>
     <string name="disconnected">DISCONNECTED</string>
     <string name="not_connected">NOT CONNECTED</string>
+    <string name="lost">LOST CONNECTION</string>
 
     <!--Strings for managing Mode -->
     <string name="collection">IN COLLECTION</string>
@@ -36,7 +37,7 @@
     <string name="returnButton_Label">Go To Collection</string>
     <string name="resumeButton_Label">Resume</string>
     <string name="stopButton_Label">Stop</string>
-    <string name="shutdownButton_Label">Shutdown</string>
+    <string name="reconnectButton_Label">Reconnect</string>
 
     <!-- Fragment Titles -->
     <string name="deviceTitle">Select Paired Device</string>
