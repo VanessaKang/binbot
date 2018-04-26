@@ -1057,8 +1057,9 @@ void listen() {
 		client = accept(sock, (struct sockaddr *) &rem_addr, &opt);
 		if (client < 0) {
 			perror("MAIN: failed to accept connection");
-			channel++;
-			loc_addr.rc_channel = (uint8_t)channel;
+			channel++; 
+
+			setupSocket(); 
 		}
 		else {
 			hasAccepted = true;
