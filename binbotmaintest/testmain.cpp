@@ -144,6 +144,7 @@ unsigned char ultraVal;
 //declare global variables--------
 int ei_state= DISPOSALSTATE;
 double ed_fillLevel;
+int avFill;
 double vd_battVoltage;
 int ei_error=0;
 //These variables cannot be defined as string, and i am not quite sure how we are using it
@@ -686,7 +687,6 @@ void collection(){
 void disposal(){
     printf("Disposal state reached \n");
     int fillLevel[3] = {3,3,3};
-    int avFill;
     int sum;
     int fillCheckStart;
 
@@ -1026,7 +1026,7 @@ void setupSocket() {
 }
 
 //set socket to listen for connection requests 
-int listen() {
+void listen() {
 	bool hasAccepted = false;
 
 	//put socket into listening mode (blocking call) 
@@ -1080,8 +1080,8 @@ void *writeToApp(void *ptr){
     //CONSTANTS DECLARATION 
     #define MODE 0 
     #define FILL 1
-    #define BATT 2 
-    #define SIG  3
+    #define DESTINATION 2 
+    #define ERRORCODE  3
 
     #define UPDATE_SIZE 4
 
