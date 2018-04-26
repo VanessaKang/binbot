@@ -1059,12 +1059,13 @@ void spawn() {
 void listen() {
 	bool hasAccepted = false; 
 
-	//put socket into listening mode (blocking call) 
-	printf("MAIN: Listening...\n");
-	listen(sock, 1);
-
-	//Accept a connection 
 	while (!hasAccepted) {
+		//put socket into listening mode (blocking call) 
+		printf("MAIN: Listening...\n");
+		listen(sock, 1);
+
+		//Accept a connection 
+	
 		client = accept(sock, (struct sockaddr *) &rem_addr, &opt);
 		if (client < 0) {
 			perror("MAIN: failed to accept connection");
