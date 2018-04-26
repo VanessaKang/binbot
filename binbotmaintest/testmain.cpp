@@ -33,6 +33,7 @@ int connectionStatus = STATE_NOCONNECTION;
 struct sockaddr_rc loc_addr = { 0 }, rem_addr = { 0 };
 char buf[1024] = { 0 };
 int sock, client; 
+int channel = 1;
 socklen_t opt = sizeof(rem_addr);
 
 char address[18] = "B8:27:EB:30:19:A2"; //Address of the pi NOTE: Must change for each spereate pi used  
@@ -308,7 +309,7 @@ void *bluetoothServer(void *ptr){
             end = clock()/CLOCKS_PER_SEC;
             if(end - begin > 5){
                 printf("MAIN: Looping\n");
-                printf("%i \n", ei_userCommand);
+                //printf("%i \n", ei_userCommand);
                 begin = clock()/CLOCKS_PER_SEC;
             } 
             /////////////////////////////////////////////////////////////////////
@@ -1024,25 +1025,7 @@ void setupSocket() {
     bind(sock, (struct sockaddr *) &loc_addr, sizeof(loc_addr));
 }
 
-//set socket to listen for connection requests 
-void listen() {
-    //put socket into listening mode (blocking call) 
-    printf("MAIN: Listening...\n");
-    listen(sock, 1);
-
-    //Accept a connection 
-    client = accept(sock, (struct sockaddr *) &rem_addr, &opt);
-
-    //Print connection success 
-    ba2str(&rem_addr.rc_bdaddr, buf); 
-    printf("MAIN: accepted connection from %s\n", buf); 
-
-    //clears byte array 
-    memset(buf, 0, sizeof(buf)); 
-    
-    //Alter connection status to display succcess 
-    connectionStatus = STATE_CONNECTED; 
-}//listen 
+ 
 
 //Spawn Threads to handle connection read and write 
 void spawn() {
@@ -1061,13 +1044,45 @@ void spawn() {
     }
 }//spawn 
 
- //TODO Handles periodic messaging to App and error messaging
+ //set socket to listen for connection requests 
+void listen() {
+	bool hasAccepted = false;
+
+	//put socket into listening mode (blocking call) 
+	printf("MAIN: Listening...\n");
+	listen(sock, 1);
+
+	//Accept a connection 
+	while (!hasAccepted) {
+		client = accept(sock, (struct sockaddr *) &rem_addr, &opt);
+		if (client < 0) {
+			perror("MAIN: failed to accept connection");
+			channel++;
+			loc_addr.rc_channel = (uint8_t)channel;
+		}
+		else {
+			hasAccepted = true;
+		}
+	}
+
+	//Print connection success 
+	ba2str(&rem_addr.rc_bdaddr, buf);
+	printf("MAIN: accepted connection from %s\n", buf);
+
+	//clears byte array 
+	memset(buf, 0, sizeof(buf));
+
+	//Alter connection status to display succcess 
+	connectionStatus = STATE_CONNECTED;
+}//listen 
+
+ //Handles periodic messaging to App and error messaging
 void *writeToApp(void *ptr){
     //CONSTANTS DECLARATION 
     #define MODE 0 
     #define FILL 1
+	#define DESTINATION  2
     #define ERRORCODE 3
-    #define DESTINATION  2
 
     #define UPDATE_SIZE 4
 
