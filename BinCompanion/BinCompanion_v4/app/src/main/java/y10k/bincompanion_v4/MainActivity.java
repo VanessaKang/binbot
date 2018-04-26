@@ -74,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
     private int mFillStatus = STATE_NOT_CONNECTED;
     private int mNextDestinationStatus = STATE_NOT_CONNECTED;
 
-    //TODO: Set UI to display if stopped; must also show current mode
     private boolean isStopped = false;
 
     private TextView mConnect;
@@ -290,13 +289,10 @@ public class MainActivity extends AppCompatActivity {
                 mConnect.setText(R.string.failed);
                 break;
             case STATE_DISCONNECTED:
-                mModeStatus = STATE_NOT_CONNECTED;
-                mFillStatus = STATE_NOT_CONNECTED;
+                resetUi();
                 mConnect.setText(R.string.disconnected);
                 break;
             default:
-                mModeStatus = STATE_NOT_CONNECTED;
-                mFillStatus = STATE_NOT_CONNECTED;
                 mConnect.setText(R.string.not_connected);
                 break;
         }//mConnectionStatus switch
@@ -347,6 +343,24 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }//mFillStatus switch
     }//updateUI
+
+    private void resetUi(){
+        Button resume = findViewById(R.id.resume_button);
+        Button stop = findViewById(R.id.stop_button);
+        TextView stopped = findViewById(R.id.stopped_status);
+
+        mModeStatus = STATE_NOT_CONNECTED;
+        mFillStatus = STATE_NOT_CONNECTED;
+        isStopped = false;
+
+        resume.setVisibility(View.INVISIBLE);
+        resume.setEnabled(false);
+        stop.setVisibility(View.VISIBLE);
+        stop.setEnabled(true);
+        stopped.setVisibility(View.INVISIBLE);
+
+        updateUI();
+    }
 
     private void createDialog(int dialogType){
         //Store information required for dialog in Bundle
