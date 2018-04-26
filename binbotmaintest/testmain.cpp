@@ -33,7 +33,6 @@ int connectionStatus = STATE_NOCONNECTION;
 struct sockaddr_rc loc_addr = { 0 }, rem_addr = { 0 };
 char buf[1024] = { 0 };
 int sock, client; 
-int channel = 1; 
 socklen_t opt = sizeof(rem_addr);
 
 char address[18] = "B8:27:EB:30:19:A2"; //Address of the pi NOTE: Must change for each spereate pi used  
@@ -108,7 +107,7 @@ double timeFromStart(auto y);
 
 // Define Constants used in code **** Needs to be edited
 //BIN SENSOR CONSTANTS
-#define BINFULLDIST 5
+#define BINFULLDIST 8
 #define BINEMPTYDIST 25
 #define FTHRESH 40
 #define LRTHRESH 25
@@ -142,9 +141,8 @@ unsigned char ultraVal;
 
 
 //declare global variables--------
-int ei_state= DISPOSALSTATE;
+int ei_state= COLLECTIONSTATE;
 double ed_fillLevel;
-int avFill;
 double vd_battVoltage;
 int ei_error=0;
 //These variables cannot be defined as string, and i am not quite sure how we are using it
@@ -169,6 +167,7 @@ int ci_sensorFront;
 int ci_sensorRight;
 int ci_sensorFill = 15;
 int ci_sensorVertical;
+int avFill;
 
 // New proposed variables from Component document
 int ei_userCommand = NO_COMMAND;
@@ -258,7 +257,7 @@ void *FSM(void *ptr){
                 //thread so we just need to check the global variable indicating errors (ei_error?)
                 }
                 errorState();
-                ei_prevState = 0;
+                //ei_prevState = 0;
             break;
             case 1: //Travel State
                 if(ei_prevState != 1){
@@ -306,11 +305,11 @@ void *bluetoothServer(void *ptr){
         //While loop used to manage threads for lost connections 
         while (connectionStatus == STATE_CONNECTED) {
             ///////FOR TESTING//////////////////////////////////////
-            end = clock()/CLOCKS_PER_SEC; 
+            end = clock()/CLOCKS_PER_SEC;
             if(end - begin > 5){
-                printf("MAIN: Looping\n"); 
-                //printf("%i \n", ei_userCommand);
-                begin = clock()/CLOCKS_PER_SEC; 
+                printf("MAIN: Looping\n");
+                printf("%i \n", ei_userCommand);
+                begin = clock()/CLOCKS_PER_SEC;
             } 
             /////////////////////////////////////////////////////////////////////
         }//while(connectionStatus) 
@@ -363,7 +362,7 @@ void *Data(void *ptr){
             //printf("stopping \n");
             writeData(20);
         }
-        if(ei_state == COLLECTIONSTATE || ei_state == DISPOSALSTATE){
+        if(ei_state == COLLECTIONSTATE || ei_state == DISPOSALSTATE || ei_state == ERRORSTATE){
             printf("reading sensor values \n");
             writeData(4);
             delay(I2CDELAY);
@@ -371,7 +370,7 @@ void *Data(void *ptr){
             if(ci_sensorFill==0 or ci_sensorFill>255){
                 ci_sensorFill = 255;
             }
-            //printf("SensorFill: %i \n",ci_sensorFill);
+            printf("SensorFill: %i \n",ci_sensorFill);
         }
         
     }
@@ -436,8 +435,9 @@ void writeData(int val){
 void errorState(){
     printf("Error State\n");
     if(ei_error != 0){
-        printf("do the stuff");
-
+        printf("do the stuff\n");
+        eb_lineFollow = 0;
+        usleep(1000000);
     }
     else{
         ei_state=ei_prevState;
@@ -557,7 +557,7 @@ void travel(){
             case SHUT_DOWN:
                 //do shutdown stuff
                 logFunc();
-                system("sudo shutdown -h now");
+                //system("sudo shutdown -h now");
                 break;
             case STOP:
                 //do stop stuff
@@ -594,7 +594,6 @@ void travel(){
 void collection(){
     printf("Collection state reached \n");
     int fillLevel[3] = {25,25,25};
-    int avFill;
     int sum;
     int fillCheckStart;
     while ((eb_binFilled == FALSE) && (ei_userCommand == NO_COMMAND)){
@@ -646,7 +645,7 @@ void collection(){
             case SHUT_DOWN:
                 //do shutdown stuff
                 logFunc();
-                system("sudo shutdown -h now");
+                //system("sudo shutdown -h now");
                 break;
             case STOP:
                 //do stop stuff
@@ -691,7 +690,7 @@ void disposal(){
     int fillCheckStart;
 
     if (connectionStatus == STATE_CONNECTED) {
-        while (ei_userCommand == NO_COMMAND) {
+        while (ei_userCommand == NO_COMMAND && connectionStatus == STATE_CONNECTED) {
             if(ei_error != 0){
                 ei_prevState = ei_state;
                 ei_state = ERRORSTATE; //set state to 0 for error state due to error
@@ -747,7 +746,7 @@ void disposal(){
             case SHUT_DOWN:
                 //do shutdown stuff
                 logFunc();
-                system("sudo shutdown -h now");
+               // system("sudo shutdown -h now");
                 break;
             case STOP:
                 //do stop stuff
@@ -877,7 +876,7 @@ void noBinDiag(){
         ei_error = TRUE;
     }
     if(ci_sensorFill < 31 && ei_error==TRUE){
-        ei_error ==FALSE;
+        ei_error = FALSE;
     }
 }
 void ultraSensDiag(){
@@ -1011,52 +1010,39 @@ double timeFromStart(auto y){
 
 //Setup the socket on start 
 void setupSocket() {
+    // Setup Raspberry Pi to  build sockets 
+    system("sudo sdptool add SP"); 
+
     //allocate socket
     sock = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
-	if (sock < 0) {
-		perror("MAIN: Socket Error");
-	}
 
     //bind socket to port of BluetoothAdapter 
     loc_addr.rc_family = AF_BLUETOOTH;
     str2ba(address, &loc_addr.rc_bdaddr);
-	loc_addr.rc_channel = (uint8_t) channel;
+    loc_addr.rc_channel = (uint8_t)1;
 
     bind(sock, (struct sockaddr *) &loc_addr, sizeof(loc_addr));
 }
 
 //set socket to listen for connection requests 
 void listen() {
-	bool hasAccepted = false;
+    //put socket into listening mode (blocking call) 
+    printf("MAIN: Listening...\n");
+    listen(sock, 1);
 
-	//put socket into listening mode (blocking call) 
-	printf("MAIN: Listening...\n");
-	listen(sock, 1);
+    //Accept a connection 
+    client = accept(sock, (struct sockaddr *) &rem_addr, &opt);
 
-	//Accept a connection 
-	while (!hasAccepted) {
-		client = accept(sock, (struct sockaddr *) &rem_addr, &opt);
-		if (client < 0) {
-			perror("MAIN: failed to accept connection");
-			channel++; 
-			loc_addr.rc_channel = (uint8_t) channel;
-		}
-		else {
-			hasAccepted = true;
-		}
-	}
+    //Print connection success 
+    ba2str(&rem_addr.rc_bdaddr, buf); 
+    printf("MAIN: accepted connection from %s\n", buf); 
 
-	//Print connection success 
-	ba2str(&rem_addr.rc_bdaddr, buf);
-	printf("MAIN: accepted connection from %s\n", buf);
-
-	//clears byte array 
-	memset(buf, 0, sizeof(buf));
-
-	//Alter connection status to display succcess 
-	connectionStatus = STATE_CONNECTED;
+    //clears byte array 
+    memset(buf, 0, sizeof(buf)); 
+    
+    //Alter connection status to display succcess 
+    connectionStatus = STATE_CONNECTED; 
 }//listen 
-
 
 //Spawn Threads to handle connection read and write 
 void spawn() {
@@ -1080,8 +1066,8 @@ void *writeToApp(void *ptr){
     //CONSTANTS DECLARATION 
     #define MODE 0 
     #define FILL 1
-    #define DESTINATION 2 
-    #define ERRORCODE  3
+    #define ERRORCODE 3
+    #define DESTINATION  2
 
     #define UPDATE_SIZE 4
 
@@ -1103,7 +1089,7 @@ void *writeToApp(void *ptr){
         if (new_t - t > 5) {
 
             //Create update code to pass to the App 
-            char updateMsg[UPDATE_SIZE] = { '0','0','0','0' };
+            char updateMsg[UPDATE_SIZE] = { 0 };
 
             switch (ei_state) {
             case ERRORSTATE:
@@ -1168,10 +1154,8 @@ void *readFromApp(void *ptr){
             //TODO:Compare buf to strings to perfrom actions 
             if (strcmp(buf, "call") == 0) {ei_userCommand = MOVE_TO_DISPOSAL;}
             if (strcmp(buf, "return") == 0) { ei_userCommand = MOVE_TO_COLLECTIONS;}
-            if (strcmp(buf, "resume") == 0) {ei_userCommand = STOP;}
-            if (strcmp(buf, "stop") == 0) { ei_userCommand = STOP;}
+            if (strcmp(buf, "resume") == 0 || strcmp(buf, "stop") == 0) {ei_userCommand = STOP;}
             if (strcmp(buf, "shutdown") == 0) { ei_userCommand = SHUT_DOWN;}
-
             if(strcmp(buf, "disconnect") == 0){
                 connectionStatus = STATE_NOCONNECTION;
             }
