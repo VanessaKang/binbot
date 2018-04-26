@@ -692,6 +692,17 @@ void disposal(){
 
     if (connectionStatus == STATE_CONNECTED) {
         while (ei_userCommand == NO_COMMAND && connectionStatus == STATE_CONNECTED) {
+
+			for (int i = 2; i >= 1; i--) {
+				fillLevel[i] = fillLevel[i - 1];
+			}
+			fillLevel[0] = ci_sensorFill;
+			sum = 0;
+			for (int i = 0; i<3; i++) {
+				sum = sum + fillLevel[i];
+			}
+			avFill = sum / 3;
+
             if(ei_error != 0){
                 ei_prevState = ei_state;
                 ei_state = ERRORSTATE; //set state to 0 for error state due to error
