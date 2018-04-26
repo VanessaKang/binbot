@@ -33,6 +33,7 @@ int connectionStatus = STATE_NOCONNECTION;
 struct sockaddr_rc loc_addr = { 0 }, rem_addr = { 0 };
 char buf[1024] = { 0 };
 int sock, client; 
+int channel = 1; 
 socklen_t opt = sizeof(rem_addr);
 
 char address[18] = "B8:27:EB:30:19:A2"; //Address of the pi NOTE: Must change for each spereate pi used  
@@ -1019,33 +1020,43 @@ void setupSocket() {
     //bind socket to port of BluetoothAdapter 
     loc_addr.rc_family = AF_BLUETOOTH;
     str2ba(address, &loc_addr.rc_bdaddr);
-    loc_addr.rc_channel = (uint8_t)1;
+	loc_addr.rc_channel = (uint8_t) channel;
 
     bind(sock, (struct sockaddr *) &loc_addr, sizeof(loc_addr));
 }
 
 //set socket to listen for connection requests 
 int listen() {
-    //put socket into listening mode (blocking call) 
-    printf("MAIN: Listening...\n");
-    listen(sock, 1);
+	bool hasAccepted = false;
 
-    //Accept a connection 
-    client = accept(sock, (struct sockaddr *) &rem_addr, &opt);
-	if (client < 0) {
-		perror("MAIN: failed to accept connection");
+	//put socket into listening mode (blocking call) 
+	printf("MAIN: Listening...\n");
+	listen(sock, 1);
+
+	//Accept a connection 
+	while (!hasAccepted) {
+		client = accept(sock, (struct sockaddr *) &rem_addr, &opt);
+		if (client < 0) {
+			perror("MAIN: failed to accept connection");
+			channel++; 
+			loc_addr.rc_channel = (uint8_t) channel;
+		}
+		else {
+			hasAccepted = true;
+		}
 	}
 
-    //Print connection success 
-    ba2str(&rem_addr.rc_bdaddr, buf); 
-    printf("MAIN: accepted connection from %s\n", buf); 
+	//Print connection success 
+	ba2str(&rem_addr.rc_bdaddr, buf);
+	printf("MAIN: accepted connection from %s\n", buf);
 
-    //clears byte array 
-    memset(buf, 0, sizeof(buf)); 
-    
-    //Alter connection status to display succcess 
-    connectionStatus = STATE_CONNECTED; 
+	//clears byte array 
+	memset(buf, 0, sizeof(buf));
+
+	//Alter connection status to display succcess 
+	connectionStatus = STATE_CONNECTED;
 }//listen 
+
 
 //Spawn Threads to handle connection read and write 
 void spawn() {
