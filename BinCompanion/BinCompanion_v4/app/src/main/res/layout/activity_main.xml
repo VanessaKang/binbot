@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="y10k.bincompanion_v4.MainActivity">
+
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/top_area"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/guideline">
+
+        <LinearLayout
+            android:id="@+id/labelArea"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/connectLabel"
+                style="@style/labelStyle"
+                android:text="@string/connected_Label" />
+
+            <TextView
+                android:id="@+id/modeLabel"
+                style="@style/labelStyle"
+                android:text="@string/mode_Label" />
+
+            <TextView
+                android:id="@+id/fillLabel"
+                style="@style/labelStyle"
+                android:text="@string/fill_Label" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/statusArea"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toTopOf="@id/stopped_status"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/labelArea"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/connectStatus"
+                style="@style/statusStyle"
+                tools:text="CONNECTION" />
+
+            <TextView
+                android:id="@+id/modeStatus"
+                style="@style/statusStyle"
+                tools:text="MODE" />
+
+            <TextView
+                android:id="@+id/fillStatus"
+                style="@style/statusStyle"
+                tools:text="FILL" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/stopped_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:drawableLeft="@drawable/ic_error_black_24dp"
+            android:drawableStart="@drawable/ic_error_black_24dp"
+            android:text="@string/stopped"
+            android:textSize="@dimen/stoppedTextSize"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+    </android.support.constraint.ConstraintLayout>
+    
+    <android.support.constraint.Guideline
+        android:id="@+id/guideline"
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintGuide_percent="0.50"/>
+
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/bottomArea"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/guideline"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <Button
+            android:id="@+id/call_button"
+            style="@style/ButtonTheme"
+            android:drawableLeft="@drawable/ic_dispose"
+            android:drawableStart="@drawable/ic_dispose"
+            android:text="@string/callButton_Label"
+            app:layout_constraintBottom_toTopOf="@+id/return_button"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <Button
+            android:id="@+id/return_button"
+            style="@style/ButtonTheme"
+            android:drawableStart="@drawable/ic_collect"
+            android:drawableLeft="@drawable/ic_collect"
+            android:text="@string/returnButton_Label"
+            app:layout_constraintBottom_toTopOf="@+id/stop_button"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <Button
+            android:id="@+id/resume_button"
+            style="@style/ButtonTheme"
+            android:drawableLeft="@drawable/ic_resume"
+            android:drawableStart="@drawable/ic_resume"
+            android:enabled="false"
+            android:text="@string/resumeButton_Label"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <Button
+            android:id="@+id/stop_button"
+            style="@style/ButtonTheme"
+            android:drawableLeft="@drawable/ic_stop"
+            android:drawableStart="@drawable/ic_stop"
+            android:text="@string/stopButton_Label"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+    </android.support.constraint.ConstraintLayout>
+
+    <Button
+        android:id="@+id/reconnectButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:drawableLeft="@drawable/ic_replay_black_24dp"
+        android:drawableStart="@drawable/ic_replay_black_24dp"
+        android:text="@string/reconnectButton_Label"
+        android:visibility="gone"
+        android:enabled="false"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+</android.support.constraint.ConstraintLayout>

@@ -1,0 +1,61 @@
+<resources>
+    <string name="app_name">BinCompanion_v3</string>
+
+    <!-- Titles -->
+    <string name="pairedDeviceTitle">Paired Devices</string>
+    <string name="discoveredDeviceTitle">Discovered Devices</string>
+    <string name="errorTitle">ERROR</string>
+
+    <!-- These are menu strings-->
+    <string name="listenMenuButton_Label">Listen</string>
+    <string name="connectMenuButton_Label">Show Devices in Area</string>
+    <string name="showPairedMenuButton_Label">Show Paired Devices</string>
+    <string name="disconnectMenuButton_Label">Disconnect</string>
+
+    <!--These are status screen strings-->
+    <string name="status_Label">Mode:</string>
+    <string name="fill_Label">Fill Level:</string>
+    <string name="battery_Label">Battery Level:</string>
+    <string name="rssi_Label">Signal Strength:</string>
+
+    <string name="callButton_Label">Go To Disposal</string>
+    <string name="returnButton_Label">Go To Collection</string>
+    <string name="resumeButton_Label">Resume</string>
+    <string name="stopButton_Label">Stop</string>
+    <string name="shutdownButton_Label">Shutdown</string>
+
+    <!--These are pairing screen strings-->
+    <string name="paired_Label">Currently Paired With</string>
+    <string name="discovered_Label">Devices Found</string>
+    <string name="scanButton_Label">Scan</string>
+
+    <!--These are strings for managing connection-->
+    <string name="connected_Label">Connection Status: </string>
+    <string name="connected">CONNECTED</string>
+    <string name="connecting">CONNECTING</string>
+    <string name="notconnected">NOT CONNECTED</string>
+    <string name="listening">LISTENING</string>
+    <string name="failed">FAILED</string>
+    <string name="disconnected">DISCONNECTED</string>
+
+    <!--Strings for managing Mode -->
+    <string name="collection">AT COLLECTION</string>
+    <string name="travel">TRAVEL</string>
+    <string name="disposal">AT DISPOSAL</string>
+    <string name="error">ERROR</string>
+
+    <string name="travel_collection">GOING TO COLLECTION</string>
+    <string name="travel_disposal">GOING TO DISPOSAL</string>
+
+    <!--Strings for managing Fill -->
+    <string name="full">FULL</string>
+    <string name="partial_full">PARTIAL</string>
+    <string name="near_empty">SOME</string>
+    <string name="empty">EMPTY</string>
+
+    <!--Strings for managing Battery -->
+
+    <!--Strings for managing RSSI -->
+
+    <string name="notimplemented">NOT IMPLEMENTED</string>
+</resources>

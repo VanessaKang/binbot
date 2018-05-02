@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="labelTextSize">15sp</dimen>
+    <dimen name="stoppedTextSize">20sp</dimen>
+
+    <dimen name="layoutPadding">7dp</dimen>
+    <dimen name="labelPadding">20dp</dimen>
+</resources>
